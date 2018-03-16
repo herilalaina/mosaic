@@ -1,2 +1,2 @@
 # MCTS
-Monte Carlo Tree Search for global hyperparameter optimization
+Monte Carlo Tree Search for AlgorIthm Configuration
