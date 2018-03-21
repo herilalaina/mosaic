@@ -4,8 +4,10 @@ import numpy as np
 from mosaic import sklearn_mcts
 from mosaic import mcts
 from mosaic.sklearn_mcts.sklearn_env import Env_preprocessing
-from mosaic.sklearn_mcts import LogisticRegression, Lasso, SGDClassifier, ElasticNet, LinearDiscriminantAnalysis
-from mosaic.sklearn_mcts import KNeighborsClassifier, RandomForestClassifier, XGBClassifier, Ridge
+from mosaic.sklearn_mcts import Lasso, ElasticNet
+from mosaic.sklearn_mcts.classifier import SGDClassifier, LinearDiscriminantAnalysis, RandomForestClassifier, \
+    XGBClassifier, LogisticRegression, KNeighborsClassifier
+from mosaic.sklearn_mcts import Ridge
 
 list_env_classifier = {
     "LogisticRegression": LogisticRegression.Env_logisticRegression,
