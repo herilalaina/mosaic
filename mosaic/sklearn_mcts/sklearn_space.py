@@ -1,6 +1,6 @@
 import random
 
-from space import Space, Node_space
+from mosaic.space import Space, Node_space
 
 class Space_sklearn(Space):
     def __init__(self):

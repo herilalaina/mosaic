@@ -1,29 +1,29 @@
-import numpy as np
+"""Base environement class."""
+
 
 class Env():
-	"""Base class for environement
-	To define:
-		nb_possible_arm
-	"""
-	terminal_state = []
+    """Base class for environement."""
 
-	def __init__(self):
-		self.bestscore = -1
-		self.history = {}
+    terminal_state = []
 
-	def random_state(self, moves):
-		# Generate random parameter
-		pass
+    def __init__(self):
+        """Constructor."""
+        self.bestscore = -1
+        self.history = {}
 
-	def evaluate(self, moves):
-		# self.pbar.update()
-		hash_moves = hash(tuple(a for a in moves))
+    def random_state(self, moves):
+        """Generate random parameter."""
+        pass
 
-		if hash_moves in self.history:
-			return self.history[hash_moves]
+    def evaluate(self, moves):
+        """Method for moves evaluation."""
+        hash_moves = hash(tuple(a for a in moves))
 
-		res = self._evaluate(moves)
+        if hash_moves in self.history:
+            return self.history[hash_moves]
 
-		# Add into history
-		self.history[hash_moves] = res
-		return res
+        res = self._evaluate(moves)
+
+        # Add into history
+        self.history[hash_moves] = res
+        return res

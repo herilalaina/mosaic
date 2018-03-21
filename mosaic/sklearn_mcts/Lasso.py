@@ -5,7 +5,6 @@ import numpy as np
 from .sklearn_space import Space_sklearn
 from .sklearn_env import Env_preprocessing
 
-from space import Node_space
 from sklearn.base import clone
 from sklearn.linear_model import Lasso
 from sklearn.metrics import roc_auc_score

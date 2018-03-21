@@ -1,13 +1,10 @@
 """Example of high dimensional data."""
-
 import sys
+sys.path.append('../')
 import time
 import pickle
-
 from sklearn import datasets
-
-sys.path.append('mosaic')
-from sklearn_mcts import mcts_model  # noqa
+from mosaic.sklearn_mcts import mcts_model
 
 if __name__ == "__main__":
     nb_sim = 100
@@ -24,12 +21,13 @@ if __name__ == "__main__":
                                             n_clusters_per_class=10,
                                             n_informative=30,
                                             random_state=42)
-        pickle.dump((X, y), open("data_HD.pickle", "wb"))
+        pickle.dump((X, y), open("../data_HD.pickle", "wb"))
     else:
-        X, y = pickle.load(open("data_HD.pickle", "rb"))
+        X, y = pickle.load(open("../data_HD.pickle", "rb"))
 
     print("MCTS for ElasticNet")
     start = time.time()
+    res = None
     for res in mcts_model("ElasticNet", X, y, ressource_to_add=1,
                           number_child_to_add=10,
                           init_nb_child=20, nb_simulation=40):

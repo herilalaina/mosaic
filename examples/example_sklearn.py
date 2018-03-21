@@ -1,11 +1,9 @@
 """MOSAIC applied to sklearn."""
-
 import sys
+sys.path.append('../')
 import time
 from sklearn import datasets
-
-sys.path.append("mosaic")
-import sklearn_mcts  # noqa
+from mosaic import sklearn_mcts
 
 if __name__ == "__main__":
     nb_sim = 100

@@ -1,36 +1,47 @@
+"""Class Node."""
+
+
 class Node():
-	max_number_child = 10 # Share for all node
+    """Tree node class."""
 
-	def __init__(self, state, parent=None):
-		self.visits=0
-		self.reward=0.0
-		self.state=state
-		self.children=[]
-		self.parent=parent
+    max_number_child = 10  # Share for all node
 
-	def add_child(self,child_state):
-		child = Node(child_state,self)
-		self.children.append(child)
+    def __init__(self, state, parent=None):
+        """Initialization of Node class."""
+        self.visits = 0
+        self.reward = 0.0
+        self.state = state
+        self.children = []
+        self.parent = parent
 
-	def update(self,reward):
-		self.reward += reward
-		self.visits += 1
+    def add_child(self, child_state):
+        """Add child to the current node."""
+        child = Node(child_state, self)
+        self.children.append(child)
 
-	def fully_expanded(self):
-		tried_children = [c.state for c in self.children]
-		new_state = self.state.next_state()
+    def update(self, reward):
+        """Update node value."""
+        self.reward += reward
+        self.visits += 1
 
-		attempt = 0
-		while new_state in tried_children:
-			new_state = self.state.next_state()
-			if new_state in tried_children:
-				if attempt < 5:
-					attempt += 1
-				else:
-					return True
+    def fully_expanded(self):
+        """Check if node is fully expanded."""
+        tried_children = [c.state for c in self.children]
+        new_state = self.state.next_state()
 
-		return False
+        attempt = 0
+        while new_state in tried_children:
+            new_state = self.state.next_state()
+            if new_state in tried_children:
+                if attempt < 5:
+                    attempt += 1
+                else:
+                    return True
 
-	def __repr__(self):
-		s="Name: %s; Nb_visits: %d; reward: %f"%(self.state.getName(), self.visits,self.reward)
-		return s
+        return False
+
+    def __repr__(self):
+        """Personalized print of Node class."""
+        s = "Name: %s; Nb_visits: %d; reward: %f" % (self.state.getName(),
+                                                     self.visits, self.reward)
+        return s

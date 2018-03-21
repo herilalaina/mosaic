@@ -18,8 +18,8 @@ import warnings
 from sklearn.pipeline import Pipeline
 
 
-from env import Env
-from .sklearn_space import Space_preprocessing
+from mosaic.env import Env
+from mosaic.sklearn_mcts.sklearn_space import Space_preprocessing
 
 import random
 

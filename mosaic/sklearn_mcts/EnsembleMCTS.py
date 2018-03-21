@@ -6,7 +6,7 @@ import random
 warnings.filterwarnings("ignore")
 
 from sklearn.base import clone
-from sklearn_mcts import mcts_model
+from mosaic.sklearn_mcts import mcts_model
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score
@@ -39,7 +39,7 @@ class EnsembleMTCS():
 
 		self.stacking = LinearRegression(n_jobs=2)
 
-	def train(self, X, y, D):
+	def train(self, X, y, D=None):
 		if X.shape[0] * 2 < X.shape[1]:
 			high_dimensional_data = True
 		else:
