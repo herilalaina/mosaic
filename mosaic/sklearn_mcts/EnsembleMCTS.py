@@ -255,7 +255,7 @@ class EnsembleMTCS():
                 y_final = e.predict(X_test)
                 y_final[y_final < 0] = 0
                 y_final[y_final > 1] = 1
-                score = roc_auc_score(y_test, y_final)
+                score = self.score_func(y_test, y_final)
             else:
                 raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
