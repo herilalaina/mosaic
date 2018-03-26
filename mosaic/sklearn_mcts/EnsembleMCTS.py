@@ -40,7 +40,7 @@ class EnsembleMTCS():
         self.cv = cv
         self.info = info
 
-        if self.info["task"] == "binary.classification"
+        if self.info["task"] == "binary.classification":
             self.stacking = LinearRegression(n_jobs=2)
         else:
             raise Exception("Can't handle task: {0}".format(self.info["task"]))
