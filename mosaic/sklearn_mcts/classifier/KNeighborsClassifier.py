@@ -1,5 +1,6 @@
+"""KNeighborsClassifier."""
+
 import random
-import warnings
 import numpy as np
 
 from mosaic.sklearn_mcts.sklearn_space import Space_preprocessing
@@ -31,9 +32,11 @@ class Space_kneighborsClassifier(Space_preprocessing):
 
 
 class Env_kneighborsClassifier(Env_preprocessing):
-    def __init__(self, X, y, aggreg_score=np.mean, ressource=None, cv=3):
+    def __init__(self, X, y, aggreg_score=np.mean, ressource=None, cv=3, info=None):
         super(Env_kneighborsClassifier, self).__init__(X, y, aggreg_score)
         self.cv = cv
+        self.info = info
+        self.score_func = info["score_func"]
 
         sampler = self.space.sampler
         sample_to_add = {
@@ -67,8 +70,11 @@ class Env_kneighborsClassifier(Env_preprocessing):
 
             estimator.fit(X_train, y_train)
 
-            y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-            score = roc_auc_score(y_test, y_pred)
+            if self.info["task"] == "binary.classification"
+                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
+                score = self.score_func(y_test, y_pred)
+            else:
+                raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
             if score < self.bestscore:
                 for j in range(i, 3):

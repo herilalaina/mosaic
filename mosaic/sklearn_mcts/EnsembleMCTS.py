@@ -17,7 +17,7 @@ from sklearn.linear_model import LinearRegression
 class EnsembleMTCS():
     def __init__(self, list_model_name, nb_play, nb_simulation, aggreg_score,
                  init_ressource, init_nb_child, nb_step_add_ressource, nb_step_to_add_nb_child,
-                 ressource_to_add, number_child_to_add, start_time, acceleration, cv):
+                 ressource_to_add, number_child_to_add, start_time, acceleration, cv, info):
         self.list_model_name = list_model_name
 
         self.nb_play = nb_play
@@ -38,8 +38,12 @@ class EnsembleMTCS():
         self.bandits_mean = [0] * len(list_model_name)
         self.nb_visits = [0] * len(list_model_name)
         self.cv = cv
+        self.info = info
 
-        self.stacking = LinearRegression(n_jobs=2)
+        if self.info["task"] == "binary.classification"
+            self.stacking = LinearRegression(n_jobs=2)
+        else:
+            raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
     def train(self, X, y, D=None):
         if X.shape[0] * 2 < X.shape[1]:
@@ -148,14 +152,17 @@ class EnsembleMTCS():
         for e in estimators:
             e.fit(X, y)
 
-            try:
-                train_stack_ = e.predict_proba(X)[:, 1]
-                y_valid_ = e.predict_proba(D.data["X_valid"])[:, 1]
-                y_test_ = e.predict_proba(D.data["X_test"])[:, 1]
-            except:
-                train_stack_ = e.predict(X)
-                y_valid_ = e.predict(D.data["X_valid"])
-                y_test_ = e.predict(D.data["X_test"])
+            if self.info["task"] == "binary.classification"
+                try:
+                    train_stack_ = e.predict_proba(X)[:, 1]
+                    y_valid_ = e.predict_proba(D.data["X_valid"])[:, 1]
+                    y_test_ = e.predict_proba(D.data["X_test"])[:, 1]
+                except:
+                    train_stack_ = e.predict(X)
+                    y_valid_ = e.predict(D.data["X_valid"])
+                    y_test_ = e.predict(D.data["X_test"])
+            else:
+                raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
             train_stack.append(train_stack_)
             y_valid.append(y_valid_)
@@ -244,10 +251,14 @@ class EnsembleMTCS():
 
             self.list_stacking.append(e)
 
-            y_final = e.predict(X_test)
-            y_final[y_final < 0] = 0
-            y_final[y_final > 1] = 1
-            score = roc_auc_score(y_test, y_final)
+            if self.info["task"] == "binary.classification"
+                y_final = e.predict(X_test)
+                y_final[y_final < 0] = 0
+                y_final[y_final > 1] = 1
+                score = roc_auc_score(y_test, y_final)
+            else:
+                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+
             scores.append(score)
 
         return scores

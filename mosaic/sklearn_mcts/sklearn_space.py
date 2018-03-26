@@ -5,7 +5,7 @@ from mosaic.space import Space, Node_space
 
 class Space_sklearn(Space):
     def __init__(self):
-        self.root = Node_space("root")
+        super(Space_sklearn, self).__init__()
 
 
 class Space_preprocessing(Space_sklearn):

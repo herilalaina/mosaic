@@ -34,9 +34,12 @@ class Space_logisticRegression(Space_preprocessing):
 
 
 class Env_logisticRegression(Env_preprocessing):
-    def __init__(self, X, y, aggreg_score=np.mean, ressource=1, cv=3):
+    def __init__(self, X, y, aggreg_score=np.mean, ressource=1, cv=3, info=None):
         super(Env_logisticRegression, self).__init__(X, y, aggreg_score)
+
         self.cv = cv
+        self.info = info
+        self.score_func = info["score_func"]
 
         reg_space = []
         for v in range(1, 10):
@@ -77,8 +80,11 @@ class Env_logisticRegression(Env_preprocessing):
             with warnings.catch_warnings(record=True) as w:
                 estimator.fit(X_train, y_train)
 
-            y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-            score = roc_auc_score(y_test, y_pred)
+            if self.info["task"] == "binary.classification"
+                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
+                score = self.score_func(y_test, y_pred)
+            else:
+                raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
             if score < self.bestscore:
                 for j in range(i, 3):

@@ -31,10 +31,10 @@ def mcts_preprocessing(X, y, nb_sim=200, aggreg_score=np.min):
 
 def mcts_model(classifier, X, y, nb_play=25, nb_simulation=20, aggreg_score=np.mean,
                 init_ressource=1, init_nb_child=15, nb_step_add_ressource=2, nb_step_to_add_nb_child=1,
-                ressource_to_add=5, number_child_to_add=10, cv=3):
+                ressource_to_add=5, number_child_to_add=10, cv=3, info=None):
 
     environement = list_env_classifier[classifier]
-    sklearn_env = environement(X, y, aggreg_score, ressource=init_ressource, cv=cv)
+    sklearn_env = environement(X, y, aggreg_score, ressource=init_ressource, cv=cv, info=info)
     mcts_model = mcts.MCTS(env=sklearn_env)
     mcts_model.setup(nb_simulation)
 

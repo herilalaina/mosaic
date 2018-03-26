@@ -31,10 +31,12 @@ class Space_elasticNet(Space_sklearn):
 
 
 class Env_elasticNet(Env_preprocessing):
-    def __init__(self, X, y, aggreg_score=np.mean, ressource=1, cv=3):
+    def __init__(self, X, y, aggreg_score=np.mean, ressource=1, cv=3, info=None):
         super(Env_elasticNet, self).__init__(X, y, aggreg_score)
 
         self.cv = cv
+        self.info = info
+        self.score_func = info["score_func"]
 
         alpha_space = []
         for v in range(1, 10):
@@ -80,7 +82,7 @@ class Env_elasticNet(Env_preprocessing):
             y_pred[y_pred > 1] = 1
             y_pred[y_pred < 0] = 0
 
-            scores[i] = roc_auc_score(y_test, y_pred)
+            scores[i] = self.score_func(y_test, y_pred)
 
             i += 1
         return scores

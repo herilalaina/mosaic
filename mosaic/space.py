@@ -8,7 +8,9 @@ class Space():
 
     def __init__(self):
         """Initialization."""
+        self.root = Node_space("root")
         self.sampler = dict()
+        self.terminal_pointer = []
 
     def sample(self, node_name, moves=[]):
         """Sample the next configuration."""

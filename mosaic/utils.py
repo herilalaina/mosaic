@@ -1,11 +1,31 @@
 """Utils file."""
 
-from scipy.optimize import minimize
-from scipy import stats
 import george
-from george.kernels import ExpSquaredKernel
 import numpy as np
 
+from george.kernels import ExpSquaredKernel
+from env import Env
+from space import Space, Node_space
+from scipy.optimize import minimize
+from scipy import stats
+
+
+def create_custom_space_env(info_space, info_env):
+    """Function to create custom space and envrionment."""
+    custom_space = Space()
+    custom_env = Env
+    if len(info_space) != len(info_env):
+        raise Exception("Info space and info env don't have the same length.")
+
+    parent_node = Node_space(info_space[0])
+    custom_space.root.append_child(parent_node)
+    for node_name in info_space[1:]:
+        child_node = parent_node.add_child(node_name)
+        parent_node = child_node
+
+    custom_space.terminal_pointer = [parent_node]
+
+    
 
 def create_gp_model(xp):
     """Create gaussian process."""

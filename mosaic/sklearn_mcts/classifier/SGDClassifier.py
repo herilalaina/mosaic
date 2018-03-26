@@ -37,9 +37,12 @@ class Space_sgdClassifier(Space_preprocessing):
 
 
 class Env_sgdClassifier(Env_preprocessing):
-    def __init__(self, X, y, aggreg_score=np.mean, ressource=1, cv=3):
+    def __init__(self, X, y, aggreg_score=np.mean, ressource=1, cv=3, info=None):
         super(Env_sgdClassifier, self).__init__(X, y, aggreg_score)
+
         self.cv = cv
+        self.info = info
+        self.score_func = info["score_func"]
 
         sampler = self.space.sampler
         alpha_space = []
@@ -83,11 +86,11 @@ class Env_sgdClassifier(Env_preprocessing):
             estimator.fit(X_train, y_train)
 
             # Get proba for y=1
-            try:
-                y_pred = estimator.predict_proba(X_test)[:, 1]
-            except:
-                y_pred = estimator.predict(X_test)
-            score = roc_auc_score(y_test, y_pred)
+            if self.info["task"] == "binary.classification"
+                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
+                score = self.score_func(y_test, y_pred)
+            else:
+                raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
             if score < self.bestscore:
                 for j in range(i, 3):
