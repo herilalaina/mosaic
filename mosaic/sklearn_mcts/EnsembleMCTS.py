@@ -152,7 +152,7 @@ class EnsembleMTCS():
         for e in estimators:
             e.fit(X, y)
 
-            if self.info["task"] == "binary.classification"
+            if self.info["task"] == "binary.classification":
                 try:
                     train_stack_ = e.predict_proba(X)[:, 1]
                     y_valid_ = e.predict_proba(D.data["X_valid"])[:, 1]
@@ -251,7 +251,7 @@ class EnsembleMTCS():
 
             self.list_stacking.append(e)
 
-            if self.info["task"] == "binary.classification"
+            if self.info["task"] == "binary.classification":
                 y_final = e.predict(X_test)
                 y_final[y_final < 0] = 0
                 y_final[y_final > 1] = 1

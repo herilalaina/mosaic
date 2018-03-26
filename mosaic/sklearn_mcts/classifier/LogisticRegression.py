@@ -80,7 +80,7 @@ class Env_logisticRegression(Env_preprocessing):
             with warnings.catch_warnings(record=True) as w:
                 estimator.fit(X_train, y_train)
 
-            if self.info["task"] == "binary.classification"
+            if self.info["task"] == "binary.classification":
                 y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
                 score = self.score_func(y_test, y_pred)
             else:

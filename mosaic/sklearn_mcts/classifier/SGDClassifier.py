@@ -86,7 +86,7 @@ class Env_sgdClassifier(Env_preprocessing):
             estimator.fit(X_train, y_train)
 
             # Get proba for y=1
-            if self.info["task"] == "binary.classification"
+            if self.info["task"] == "binary.classification":
                 y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
                 score = self.score_func(y_test, y_pred)
             else:
