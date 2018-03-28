@@ -8,6 +8,7 @@ from mosaic.sklearn_mcts.sklearn_space import Space_preprocessing
 from mosaic.sklearn_mcts.sklearn_env import Env_preprocessing
 
 from mosaic.space import Node_space
+from mosaic import sklearn_mcts
 from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
@@ -69,8 +70,8 @@ class Env_randomForestClassifier(Env_preprocessing):
         sampler.update(sample_to_add)
 
         self.space = Space_randomForestClassifier()
-        weight = compute_class_weight("balanced", [0, 1], self.y)
-        self.space.default_params["class_weight"] = {0: weight[0], 1: weight[1]}
+        #weight = compute_class_weight("balanced", [0, 1], self.y)
+        #self.space.default_params["class_weight"] = {0: weight[0], 1: weight[1]}
         self.space.set_sampler(sampler=sampler)
 
         self.list_estimator["randomForestClassifier"] = RandomForestClassifier
@@ -96,11 +97,8 @@ class Env_randomForestClassifier(Env_preprocessing):
             with warnings.catch_warnings(record=True) as w:
                 estimator.fit(X_train, y_train)
 
-            if self.info["task"] == "binary.classification":
-                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-                score = self.score_func(y_test, y_pred)
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            y_pred = estimator.predict(X_test)
+            score = sklearn_mcts.calculate_score_metric(estimator, X_test, y_test, self.info)
 
             if score < self.bestscore:
                 for j in range(i, 3):

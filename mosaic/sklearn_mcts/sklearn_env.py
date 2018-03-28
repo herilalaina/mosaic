@@ -83,7 +83,8 @@ class Env_sklearn(Env):
             try:
                 with warnings.catch_warnings(record=True) as w:
                     preprocessing.fit(self.X, self.y)
-            except:
+            except Exception as e:
+                print(e)
                 return self.X, None, 1
             self.history_preprocessing[ident_prep] = preprocessing
 

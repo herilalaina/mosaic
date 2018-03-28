@@ -7,6 +7,7 @@ from mosaic.sklearn_mcts.sklearn_env import Env_preprocessing
 
 from mosaic.space import Node_space
 from sklearn.base import clone
+from mosaic import sklearn_mcts
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
@@ -24,7 +25,7 @@ class Space_logisticRegression(Space_preprocessing):
 
         self.default_params = {
             "solver": "saga",
-            "class_weight": "balanced",
+    #        "class_weight": "balanced",
             "warm_start": True,
             "n_jobs": -1,
             "random_state": 42
@@ -80,11 +81,8 @@ class Env_logisticRegression(Env_preprocessing):
             with warnings.catch_warnings(record=True) as w:
                 estimator.fit(X_train, y_train)
 
-            if self.info["task"] == "binary.classification":
-                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-                score = self.score_func(y_test, y_pred)
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            y_pred = estimator.predict(X_test)
+            score = sklearn_mcts.calculate_score_metric(estimator, X_test, y_test, self.info)
 
             if score < self.bestscore:
                 for j in range(i, 3):

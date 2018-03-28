@@ -6,6 +6,7 @@ from mosaic.sklearn_mcts.sklearn_space import Space_preprocessing
 from mosaic.sklearn_mcts.sklearn_env import Env_preprocessing
 
 from mosaic.space import Node_space
+from mosaic import sklearn_mcts
 from sklearn.base import clone
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import roc_auc_score
@@ -70,11 +71,8 @@ class Env_linearDiscriminantAnalysis(Env_preprocessing):
             warnings.filterwarnings("ignore")
             estimator.fit(X_train, y_train)
 
-            if self.info["task"] == "binary.classification":
-                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-                score = self.score_func(y_test, y_pred)
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            y_pred = estimator.predict(X_test)
+            score = sklearn_mcts.calculate_score_metric(estimator, X_test, y_test, self.info)
 
             if score < self.bestscore:
                 for j in range(i, 3):

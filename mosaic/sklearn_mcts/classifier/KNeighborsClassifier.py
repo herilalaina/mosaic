@@ -25,7 +25,7 @@ class Space_kneighborsClassifier(Space_preprocessing):
         # Add priors later
         self.default_params = {
             "algorithm": "auto",
-            "n_jobs": 2
+            "n_jobs": -1
         }
 
         self.terminal_pointer = [kneighborsClassifier__weights]
@@ -70,11 +70,8 @@ class Env_kneighborsClassifier(Env_preprocessing):
 
             estimator.fit(X_train, y_train)
 
-            if self.info["task"] == "binary.classification":
-                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-                score = self.score_func(y_test, y_pred)
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            y_pred = estimator.predict(X_test)
+            score = self.score_func(y_test, y_pred)
 
             if score < self.bestscore:
                 for j in range(i, 3):

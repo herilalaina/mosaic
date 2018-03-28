@@ -6,6 +6,7 @@ from mosaic.sklearn_mcts.sklearn_space import Space_preprocessing
 from mosaic.sklearn_mcts.sklearn_env import Env_preprocessing
 
 from mosaic.space import Node_space
+from mosaic import sklearn_mcts
 from sklearn.base import clone
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import roc_auc_score
@@ -16,21 +17,22 @@ class Space_sgdClassifier(Space_preprocessing):
     def __init__(self):
         super(Space_sgdClassifier, self).__init__()
 
-        sgdClassifier__loss = Node_space("sgdClassifier__loss")
-        sgdClassifier__learning_rate = sgdClassifier__loss.add_child("sgdClassifier__learning_rate")
+        #sgdClassifier__loss = Node_space("sgdClassifier__loss")
+        sgdClassifier__learning_rate = Node_space("sgdClassifier__learning_rate")
         sgdClassifier__penalty = sgdClassifier__learning_rate.add_child("sgdClassifier__penalty")
         sgdClassifier__alpha = sgdClassifier__penalty.add_child("sgdClassifier__alpha")
         sgdClassifier__l1_ratio = sgdClassifier__alpha.add_child("sgdClassifier__l1_ratio")
         sgdClassifier__max_iter = sgdClassifier__l1_ratio.add_child("sgdClassifier__max_iter")
 
-        self.append_to_parent(sgdClassifier__loss)
+        self.append_to_parent(sgdClassifier__learning_rate)
 
         self.default_params = {
-            "n_jobs": 2,
+            "n_jobs": -1,
             "class_weight": "balanced",
             "warm_start": True,
             "eta0": 0.1,
-            "random_state": 42
+            "random_state": 42,
+            "loss": "log"
         }
 
         self.terminal_pointer = [sgdClassifier__max_iter]
@@ -86,11 +88,7 @@ class Env_sgdClassifier(Env_preprocessing):
             estimator.fit(X_train, y_train)
 
             # Get proba for y=1
-            if self.info["task"] == "binary.classification":
-                y_pred = estimator.predict_proba(X_test)[:, 1]  # Get proba for y=1
-                score = self.score_func(y_test, y_pred)
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            score = sklearn_mcts.calculate_score_metric(estimator, X_test, y_test, self.info)
 
             if score < self.bestscore:
                 for j in range(i, 3):

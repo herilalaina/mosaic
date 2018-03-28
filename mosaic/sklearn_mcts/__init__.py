@@ -8,6 +8,7 @@ from mosaic.sklearn_mcts import Lasso, ElasticNet
 from mosaic.sklearn_mcts.classifier import SGDClassifier, LinearDiscriminantAnalysis, RandomForestClassifier, \
     XGBClassifier, LogisticRegression, KNeighborsClassifier
 from mosaic.sklearn_mcts import Ridge
+import sklearn
 
 list_env_classifier = {
     "LogisticRegression": LogisticRegression.Env_logisticRegression,
@@ -115,3 +116,21 @@ def mcts_xgboost(X, y, nb_sim=200):
     mcts_model = mcts.MCTS(env=sklearn_env)
     res = mcts_model.run(nb_sim=nb_sim)
     return res
+
+
+def calculate_score_metric(estimator, X_test, y, info):
+    from sklearn.preprocessing import label_binarize
+
+    if info["task"] == "binary.classification":
+        y_pred = estimator.predict(X_test)
+        v = info["score_func"](y, y_pred)
+        return 0 if v < 0 else v
+    elif info["task"] == "multiclass.classification":
+        y = label_binarize(y, classes=list(range(info["label_num"])))
+
+        if info["metric"] == "bac_metric":
+            y_pred = estimator.predict(X_test)
+        else:
+            y_pred = estimator.predict_proba(X_test)
+        v = info["score_func"](y, y_pred)
+        return v

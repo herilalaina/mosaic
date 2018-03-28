@@ -7,11 +7,12 @@ import random
 warnings.filterwarnings("ignore")
 
 from sklearn.base import clone
+from mosaic import sklearn_mcts
 from mosaic.sklearn_mcts import mcts_model
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LogisticRegression
 
 
 class EnsembleMTCS():
@@ -41,11 +42,13 @@ class EnsembleMTCS():
         self.info = info
 
         if self.info["task"] == "binary.classification":
-            self.stacking = LinearRegression(n_jobs=2)
+            self.stacking = LogisticRegression(n_jobs=2)
+        elif self.info["task"] == "multiclass.classification":
+            self.stacking = LogisticRegression(n_jobs=2)
         else:
             raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
-    def train(self, X, y, D=None):
+    def train(self, X, y, X_VALID=None, X_TEST=None):
         if X.shape[0] * 2 < X.shape[1]:
             high_dimensional_data = True
         else:
@@ -57,13 +60,13 @@ class EnsembleMTCS():
                 models[name] = mcts_model(name, X, y, self.nb_play, self.nb_simulation, self.aggreg_score,
                                           self.init_ressource, self.init_nb_child, self.nb_step_add_ressource,
                                           self.nb_step_to_add_nb_child,
-                                          self.ressource_to_add, self.number_child_to_add, self.cv)
+                                          self.ressource_to_add, self.number_child_to_add, self.cv, self.info)
             else:
                 models[name] = mcts_model(name, X, y, self.nb_play, self.nb_simulation * self.acceleration,
                                           self.aggreg_score,
                                           self.init_ressource, self.init_nb_child, self.nb_step_add_ressource,
                                           self.nb_step_to_add_nb_child,
-                                          self.ressource_to_add, self.number_child_to_add, self.cv)
+                                          self.ressource_to_add, self.number_child_to_add, self.cv, self.info)
         begin_bandit = 1
 
         for i in range(self.nb_play):
@@ -92,7 +95,7 @@ class EnsembleMTCS():
                         estimators.append(clone(self.history_model[index][0]))
                         is_not_new.append(True)
 
-            scores = self.cross_validation_estimators(estimators, X, y, D, is_not_new)
+            scores = self.cross_validation_estimators(estimators, X, y, is_not_new)
             val_scores = self.aggreg_score(scores)
 
             if (
@@ -105,12 +108,9 @@ class EnsembleMTCS():
                 self.best_final_score = score
                 e = self.create_pipeline(p)
                 e.fit(X, y)
-                try:
-                    val = e.predict_proba(D.data["X_valid"])[:, 1]
-                    test = e.predict_proba(D.data["X_test"])[:, 1]
-                except:
-                    val = e.predict(D.data["X_valid"])
-                    test = e.predict(D.data["X_test"])
+
+                val = e.predict_proba(X_VALID)[:, 1]
+                test = e.predict_proba(X_TEST)[:, 1]
 
                 print("======> Best scores: {0}\n\n".format(self.best_final_score))
                 yield val, test
@@ -122,17 +122,17 @@ class EnsembleMTCS():
 
             if self.best_final_score < val_scores:
                 self.best_final_score = val_scores
-                yield self.fit_predict(estimators, X, y, D)
+                yield self.fit_predict(estimators, X, y, X_VALID, X_TEST)
             else:
-                self.print_remaining_time(D)
+                self.print_remaining_time()
                 yield None, None
 
-    def print_remaining_time(self, D):
+    def print_remaining_time(self):
         now = time.time()
         spend = now - self.start_time
         print("\n\n---------------------------------------------------------------")
         print("             Time elapsed: {0}         Remaining time: {1}".format(spend,
-                                                                                  float(D.info['time_budget']) - spend))
+                                                                                  float(self.info['time_budget']) - spend))
         print("---------------------------------------------------------------\n\n")
 
     def update_reward(self, choosed_armed, reward, t):
@@ -144,7 +144,7 @@ class EnsembleMTCS():
             except:
                 self.bandits[i] = 10000
 
-    def fit_predict(self, estimators, X, y, D):
+    def fit_predict(self, estimators, X, y, X_VALID, X_TEST):
         train_stack = []
         y_valid = []
         y_test = []
@@ -152,43 +152,40 @@ class EnsembleMTCS():
         for e in estimators:
             e.fit(X, y)
 
-            if self.info["task"] == "binary.classification":
-                try:
-                    train_stack_ = e.predict_proba(X)[:, 1]
-                    y_valid_ = e.predict_proba(D.data["X_valid"])[:, 1]
-                    y_test_ = e.predict_proba(D.data["X_test"])[:, 1]
-                except:
-                    train_stack_ = e.predict(X)
-                    y_valid_ = e.predict(D.data["X_valid"])
-                    y_test_ = e.predict(D.data["X_test"])
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            train_stack_ = e.predict_proba(X)
+            y_valid_ = e.predict_proba(X_VALID)
+            y_test_ = e.predict_proba(X_TEST)
 
             train_stack.append(train_stack_)
             y_valid.append(y_valid_)
             y_test.append(y_test_)
 
-        train_stack = np.transpose(train_stack)
-        y_valid = np.transpose(y_valid)
-        y_test = np.transpose(y_test)
+        train_stack = np.concatenate(train_stack, axis=1)
+        y_valid = np.concatenate(y_valid, axis=1)
+        y_test = np.concatenate(y_test, axis=1)
 
         final_valid = []
         final_test = []
 
         for stacking in self.list_stacking:
-            final_valid.append(stacking.predict(y_valid))
-            final_test.append(stacking.predict(y_test))
+            final_valid.append(stacking.predict_proba(y_valid))
+            final_test.append(stacking.predict_proba(y_test))
 
-        final_valid = np.mean(np.transpose(final_valid), axis=1)
-        final_test = np.mean(np.transpose(final_test), axis=1)
+        final_valid = np.mean(final_valid, axis=0)
+        final_test = np.mean(final_test, axis=0)
 
         final_valid[final_valid < 0] = 0
         final_valid[final_valid > 1] = 1
         final_test[final_test < 0] = 0
         final_test[final_test > 1] = 1
+
+        if self.info["task"] == "binary.classification":
+            final_valid = final_valid[:, 1]
+            final_test = final_test[:, 1]
+
         return final_valid, final_test
 
-    def cross_validation_estimators(self, estimators, X, y, D, is_not_new=[]):
+    def cross_validation_estimators(self, estimators, X, y, is_not_new=[]):
         skf = StratifiedKFold(n_splits=self.cv, shuffle=False, random_state=42)
         scores = []
 
@@ -216,14 +213,13 @@ class EnsembleMTCS():
                         self.history_model[index].append(e)
 
                 try:
-                    y_pred_ = e.predict_proba(X_test)[:, 1]
+                    y_pred_ = e.predict_proba(X_test)
                 except:
                     y_pred_ = e.predict(X_test)
 
                 y_pred.append(y_pred_)
 
-            y_pred = np.transpose(y_pred)
-
+            y_pred = np.concatenate(y_pred, axis=1)
             oof_y.extend(y_test)
 
             if oof_train == []:
@@ -251,13 +247,7 @@ class EnsembleMTCS():
 
             self.list_stacking.append(e)
 
-            if self.info["task"] == "binary.classification":
-                y_final = e.predict(X_test)
-                y_final[y_final < 0] = 0
-                y_final[y_final > 1] = 1
-                score = self.score_func(y_test, y_final)
-            else:
-                raise Exception("Can't handle task: {0}".format(self.info["task"]))
+            score = sklearn_mcts.calculate_score_metric(e, X_test, y_test, self.info)
 
             scores.append(score)
 
