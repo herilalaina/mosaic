@@ -16,30 +16,17 @@ from sklearn.linear_model import LogisticRegression
 
 
 class EnsembleMTCS():
-    def __init__(self, list_model_name, nb_play, nb_simulation, aggreg_score,
-                 init_ressource, init_nb_child, nb_step_add_ressource, nb_step_to_add_nb_child,
-                 ressource_to_add, number_child_to_add, start_time, acceleration, cv, info):
-        self.list_model_name = list_model_name
+    def __init__(self, aggreg_score, cv, info):
 
-        self.nb_play = nb_play
-        self.nb_simulation = nb_simulation
-        self.aggreg_score = aggreg_score
-        self.init_ressource = init_ressource
-        self.init_nb_child = init_nb_child
-        self.nb_step_add_ressource = nb_step_add_ressource
-        self.nb_step_to_add_nb_child = nb_step_to_add_nb_child
-        self.ressource_to_add = ressource_to_add
-        self.number_child_to_add = number_child_to_add
+        self.nb_play = 500
+        self.nb_simulation = 2
+        self.init_nb_child = 20
+        self.number_child_to_add = 1
         self.best_final_score = 0
 
-        self.start_time = start_time
-        self.history_model = {}
-        self.acceleration = acceleration
-        self.bandits = [1000] * len(list_model_name)
-        self.bandits_mean = [0] * len(list_model_name)
-        self.nb_visits = [0] * len(list_model_name)
-        self.cv = cv
+        self.aggreg_score = aggreg_score
         self.info = info
+        self.cv = cv
 
         if self.info["task"] == "binary.classification":
             self.stacking = LogisticRegression(n_jobs=2)
@@ -48,11 +35,38 @@ class EnsembleMTCS():
         else:
             raise Exception("Can't handle task: {0}".format(self.info["task"]))
 
+    def define_strategy(self, X):
+		self.list_estimator = ["ElasticNet", "Lasso", "Ridge", "SGDClassifier", "LogisticRegression", "RandomForestClassifier", "XGBClassifier"]
+		self.acceleration = 5
+		self.cv = 3
+		if X.shape[0] * 2 < X.shape[1]:
+			self.list_estimator = ["ElasticNet", "Lasso", "Ridge", "RandomForestClassifier", "XGBClassifier"]
+			self.cv = 10
+			self.ressource_to_add = 1
+			self.nb_step_add_ressource = 1
+			self.init_ressource = 1
+		elif X.shape[0] < 6000:
+			self.ressource_to_add = 20
+			self.nb_step_add_ressource = 20
+			self.init_ressource = 100
+		else:
+			self.acceleration = 1
+			self.ressource_to_add = 5
+			self.nb_step_add_ressource = 5
+			self.init_ressource = 5
+        self.start_time = time.time()
+        self.history_model = {}
+        self.bandits = [1000] * len(list_model_name)
+        self.bandits_mean = [0] * len(list_model_name)
+        self.nb_visits = [0] * len(list_model_name)
+
     def train(self, X, y, X_VALID=None, X_TEST=None):
         if X.shape[0] * 2 < X.shape[1]:
             high_dimensional_data = True
         else:
             high_dimensional_data = False
+
+        self.define_strategy(X)
 
         models = {}
         for name in self.list_model_name:
@@ -97,23 +111,6 @@ class EnsembleMTCS():
 
             scores = self.cross_validation_estimators(estimators, X, y, is_not_new)
             val_scores = self.aggreg_score(scores)
-
-            if (
-            not high_dimensional_data) and i >= begin_bandit and reward == 1 and score > val_scores and score > self.best_final_score:
-                print("======> Play {0}: Score:{1}".format(i, score))
-                print("Single estimator is better!")
-
-                self.update_reward(choosed_armed, 1, i)
-
-                self.best_final_score = score
-                e = self.create_pipeline(p)
-                e.fit(X, y)
-
-                val = e.predict_proba(X_VALID)[:, 1]
-                test = e.predict_proba(X_TEST)[:, 1]
-
-                print("======> Best scores: {0}\n\n".format(self.best_final_score))
-                yield val, test
 
             print("======> Play {0}: scores: {1} Score:{2}".format(i, scores, val_scores))
             print("======> Best scores: {0}\n\n".format(max(self.best_final_score, val_scores)))
