@@ -1,127 +1,99 @@
 """Monte carlo tree seach class."""
 
 import random
-import math
+
 import logging
+import math
+import networkx as nx
+
 from mosaic.policy import UCT
+from mosaic.space import Space
 from mosaic.node import Node
-from mosaic.state import State
 
 
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, logfile='mcts.log'):
+    def __init__(self, env, logfile=''):
         """Initialization."""
+        # environement
         self.env = env
-        self.root_node = Node(State(env=env, moves=[("root", None)]))
+
+        # Init tree
+        self.root = nx.DiGraph()
+        n = Node("root", value=None)
+        root_node = Node(name="root", value=None)
+        self.root.add_node("root", name="root", att=n)
 
         # Set up logger
-        self.logger = logging.getLogger('mcts')
-        hdlr = logging.FileHandler('mcts.log', mode='w')
-        formatter = logging.Formatter('%(asctime)s %(message)s')
-        hdlr.setFormatter(formatter)
-        self.logger.addHandler(hdlr)
-        self.logger.setLevel(logging.DEBUG)
+        if logfile != '':
+            self.logger = logging.getLogger('mcts')
+            hdlr = logging.FileHandler(logfile, mode='w')
+            formatter = logging.Formatter('%(asctime)s %(message)s')
+            hdlr.setFormatter(formatter)
+            self.logger.addHandler(hdlr)
+            self.logger.setLevel(logging.DEBUG)
 
         # Policy
         self.policy = UCT()
 
-    def MCT_SEARCH(self, budget, root):
+    def MCT_SEARCH(self):
         """MCTS method."""
-        for iter in range(int(budget)):
-            front = self.TREEPOLICY(root)
-            reward = self.random_policy(front.state)
-            self.BACKUP(front, reward)
-        return self.policy.BESTCHILD(root, 0)
+        front = self.TREEPOLICY()
+        reward = self.random_policy(front)
+        self.BACKUP(front, reward)
+        #return self.policy.BESTCHILD(, 0)
 
-    def TREEPOLICY(self, node):
+    def TREEPOLICY(self):
         """Search for the best child node."""
         SCALAR = 1 / math.sqrt(2.0)
-        while not node.state.terminal():
-            if len(node.children) == 0:
+
+        node = "root"
+
+        while not nx.get_node_attributes(self.root, "att")[node].terminal:
+            childs = list(self.root.successors(node))
+            if len(childs) == 0:
                 return self.EXPAND(node)
-            elif random.uniform(0, 1) < 0.1:
-                node = self.policy.BESTCHILD(node, SCALAR)
             else:
-                if not node.fully_expanded():
+                if not self.root.nodes[node]["att"].fully_expanded(self.env.space, self.root):
                     return self.EXPAND(node)
                 else:
-                    node = self.policy.BESTCHILD(node, SCALAR)
+                    node = self.policy.BESTCHILD(self.root.nodes[node]["att"], self.list_node(node), SCALAR)
+            if len(childs) == 0:
+                break
+
         return node
+
+    def list_node(self, node):
+        return [v["att"] for k, v in self.root.nodes.items()]
 
     def EXPAND(self, node):
         """Expand child node."""
-        tried_children = [c.state for c in node.children]
-        new_state = node.state.next_state()
-        while new_state in tried_children:
-            new_state = node.state.next_state()
-        node.add_child(new_state)
-        return node.children[-1]
+        tried_children = set(self.root.successors(node))
+        next_node = self.env.space.next_params(node, history = [v.name for k, v in self.root.predecessors(node).items()])
+        while True:
+            name, val = self.env.space.sample(next_node)
+            final_name = name + "=" + str(val)
+            if final_name not in tried_children:
+                break
+        node_to_add = Node(name=final_name, value=val)
+        self.root.add_node(final_name, name=val, att=node_to_add)
+        self.root.add_path([node, final_name])
+        return final_name
 
-    def random_policy(self, state):
+    def random_policy(self, node):
         """Random policy."""
-        while not state.terminal():
-            state = state.next_state()
-        return state.reward()
-
-    def best_decision(self):
-        """Best path search."""
-        node = self.root_node
-        list_node = []
-        while not node.state.terminal():
-            node = self.policy.BESTCHILD(node, 0)
-            list_node.append(node.state.moves[-1])
-        return list_node
+        playout_node = self.env.space.playout(self.root, node)
+        return self.env._evaluate(self.root)
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
-        while node is not None:
-            node.visits += 1
-            node.reward += reward
-            node = node.parent
+        for parent in list(nx.ancestors(self.root, node)):
+            self.root.nodes[parent]["att"].update(reward)
 
-    def setup(self, nb_sim_each_play):
-        """Update number of simulation for each play."""
-        self.nb_sim_each_play = nb_sim_each_play
-
-    def play(self, info=""):
-        """Run one simulation of MCTS."""
-        self.logger.debug("--------------------------------")
-        self.logger.debug("Play {0}".format(info))
-        current_node = self.root_node
-        level = 0
-
-        old_best_model = self.env.best_model
-
-        while (len(current_node.children) > 0) or (level == 0):
-            self.logger.debug("--------------------------------")
-            current_node_ = self.MCT_SEARCH(self.nb_sim_each_play,
-                                            current_node)
-            self.logger.debug("level %d" % level)
-            self.logger.debug("Num Children: %d" % len(current_node.children))
-            for i, c in enumerate(current_node.children):
-                self.logger.debug("\t {0} : {1}".format(i, c))
-            current_node = current_node_
-            level += 1
-
-        return (self.env.best_model,
-                old_best_model == self.env.best_model, self.env.bestscore)
-
-    def run(self, nb_sim):
-        """Play nb_sim simulation."""
-        current_node = self.root_node
-        level = 0
-        while (len(current_node.children) > 0) or (level == 0):
-            current_node_ = self.MCT_SEARCH(nb_sim, current_node)
-            self.logger.debug("level %d" % level)
-            self.logger.debug("Num Children: %d" % len(current_node.children))
-            for i, c in enumerate(current_node.children):
-                self.logger.debug("\t {0} : {1}".format(i, c))
-            self.logger.debug("Best Child: {0}, value: {1}"
-                              .format(current_node_.state,
-                                      current_node_.state.value))
-            current_node = current_node_
-            self.logger.debug("--------------------------------")
-            level += 1
-        return self.env.best_model
+    def run(self, n=1):
+        """Play 1 simulation."""
+        for i in range(n):
+            self.MCT_SEARCH()
+            print(self.env.bestscore)
+        #return self.env.best_model

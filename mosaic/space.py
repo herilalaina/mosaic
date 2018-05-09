@@ -1,73 +1,89 @@
 """Space in which MCTS will be run."""
 
+from copy import deepcopy
 import random
 
+from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
 class Space():
-    """Abstract space class."""
-
-    def __init__(self):
-        """Initialization."""
-        self.root = Node_space("root")
-        self.sampler = dict()
-        self.terminal_pointer = []
-
-    def sample(self, node_name, moves=[]):
-        """Sample the next configuration."""
-        child = self.get_child(node_name)
-        if len(child) == 0:
-            return None, None
-        elif len(child) == 1:
-            name = list(child.keys())[0]
-            func, params = self.sampler[name]
-            return name, func(*params)
-        elif len(child) >= 2:  # Two childs
-            arr_child = [c for c in child]
-            v = random.choice(arr_child)
-            return v, v
-        else:
-            raise Exception('Error handling this case.')
-
-    def _get_child(node, node_name):
-        if node.name == node_name:
-            return node.children
-        else:
-            for c in node.children.keys():
-                res = Space._get_child(node.children[c], node_name)
-                if isinstance(res, dict) and res != {}:
-                    return res
-        return {}
-
-    def get_child(self, node_name):
-        """Get child of node."""
-        return Space._get_child(self.root, node_name)
-
-    def set_sampler(self, sampler):
-        """Set sampler."""
+    def __init__(self, scenario = None, sampler = {}):
+        self.scenario = scenario
         self.sampler = sampler
 
+    def sampling_method(self, is_finite):
+        if is_finite == "choice":
+            return random.choice
+        else:
+            return random.uniform
 
-class Node_space():
-    """Node space class."""
+    def next_params(self, history=[]):
+        """Return next hyperparameter
+            node_name: current node (string)
+            history: (node_name, value)
+        """
+        scenario = deepcopy(self.scenario)
+        for config, _ in history:
+            scenario.execute(config)
+        return scenario.call()
 
-    def __init__(self, name, parent={}):
-        """Initialization."""
-        self.name = name
-        self.children = {}
-        self.parent = parent
+    def has_finite_child(self, history=[]):
+        """Return True if number of child is finite
+        """
+        scenario = deepcopy(self.scenario)
+        for config, _ in history:
+            scenario.execute(config)
+        nb_child = 0
+        for next_task in scenario.queue_tasks():
+            if next_task in self.sampler:
+                b, f, t = self.sampler[next_task]
+                if f == "choice":
+                    nb_child += len(b[0])
+                else:
+                    return True, 99999
+            else:
+                nb_child += 1
+        return False, nb_child
 
-    def add_child(self, child_name):
-        """Add child to space."""
-        child = Node_space(child_name, parent={self.name: self})
-        self.children[child_name] = child
-        return child
+    def sample(self, node_name):
+        """Sample the next configuration.
+        """
+        if node_name in self.sampler:
+            b, f, t = self.sampler[node_name]
+            method = self.sampling_method(f)
+            return method(*b)
+        else:
+            return None
 
-    def append_child(self, child_node):
-        """Append node as a child."""
-        self.children[child_node.name] = child_node
-        child_node.parent[self.name] = self
+    def playout(self, history=[]):
+        scenario = deepcopy(self.scenario)
 
-    def append_childs(self, child_nodes):
-        """Append a list of child."""
-        for child_node in child_nodes:
-            self.append_child(child_node)
+        for config, value in history:
+            scenario.execute(config)
+
+        while(not scenario.finished()):
+            param = scenario.call()
+            value_param = self.sample(param)
+            history.append((param, value_param))
+
+        return history
+
+"""
+def a_func(): return 0
+def b_func(): return 0
+def c_func(): return 0
+
+x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1_p1", "x1_p2"])
+x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2_p1", "x2_p2"])
+
+start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+
+sampler = { "x1_p1": ([0, 1], "uniform", "float"),
+            "x1_p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
+            "x2_p1": ([["a", "b", "c", "d"]], "choice", "string"),
+            "x2_p2": ([[a_func, b_func, c_func]], "choice", "func"),
+}
+
+space = Space(scenario = start, sampler = sampler)
+
+space.playout(history=[("Model", None)])
+"""

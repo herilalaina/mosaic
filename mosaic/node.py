@@ -1,47 +1,58 @@
-"""Class Node."""
-
+import math
+import networkx as nx
 
 class Node():
-    """Tree node class."""
 
-    max_number_child = 10  # Share for all node
+    def __init__(self):
+        self.tree = nx.DiGraph()
+        self.id_count = -1
 
-    def __init__(self, state, parent=None):
-        """Initialization of Node class."""
-        self.visits = 0
-        self.reward = 0.0
-        self.state = state
-        self.children = []
-        self.parent = parent
+    def get_new_id(self):
+        self.id_count += 1
+        return self.id_count
 
-    def add_child(self, child_state):
-        """Add child to the current node."""
-        child = Node(child_state, self)
-        self.children.append(child)
+    def add_node(self, name=None, value=None, visits=0, reward=0.0, terminal=False, max_number_child=1, parent_node = None):
+        new_id = self.get_new_id()
+        self.tree.add_node(new_id, name=name, value=value, visits=visits,
+                            reward=reward, terminal=terminal,
+                            max_number_child=max_number_child)
+        if parent_node is not None:
+            self.tree.add_path([parent_node, new_id])
 
-    def update(self, reward):
-        """Update node value."""
-        self.reward += reward
-        self.visits += 1
+    def is_terminal(self, node_id):
+        return self.tree.nodes[node_id]["terminal"]
 
-    def fully_expanded(self):
-        """Check if node is fully expanded."""
-        tried_children = [c.state for c in self.children]
-        new_state = self.state.next_state()
+    def get_path_to_node(self, node_id, name = True):
+        path = nx.shortest_path(self.tree, source=0, target=node_id)
+        if name:
+            return [(self.tree.nodes[v]["name"], self.tree.nodes[v]["value"]) for v in path]
+        return path
 
-        attempt = 0
-        while new_state in tried_children:
-            new_state = self.state.next_state()
-            if new_state in tried_children:
-                if attempt < 5:
-                    attempt += 1
-                else:
-                    return True
+    def fully_expanded(self, node_id, space):
+        # Check if node is fully expanded.
+        is_finite, nb_childs = space.has_finite_child(self.get_path_to_node(node_id))
+        nb_current_childs = len(list(self.tree.successors(node_id)))
+
+        nb_child_allowed = min(nb_childs, self.get_attribute(node_id, "max_number_child"))
+
+        if nb_current_childs >= nb_child_allowed:
+            return True
 
         return False
 
-    def __repr__(self):
-        """Personalized print of Node class."""
-        s = "Name: %s; Nb_visits: %d; reward: %f" % (self.state.getName(),
-                                                     self.visits, self.reward)
-        return s
+    def backprop_from_node(self, node_id, reward):
+        for parent in self.get_path_to_node(node_id=node_id, name =False):
+            self.update_node(parent, reward)
+
+    def update_node(self, node_id, reward):
+        node = self.tree.nodes[node_id]
+        if (node["visits"] > 0) and (int(math.log(node["visits"])) < int(math.log(node["visits"]))):
+            self.tree.node[node_id]["max_number_child"] += 1
+        self.tree.node[node_id]['reward'] = node["reward"] + reward
+        self.tree.node[node_id]["visits"] += 1
+
+    def get_attribute(self, node_id, attribute):
+        return self.tree.nodes[node_id][attribute]
+
+    def set_attribute(self, node_id, attribute, new_value):
+        self.tree.node[node_id][attribute] = new_value
