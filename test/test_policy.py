@@ -10,7 +10,6 @@ class TestPolicy(unittest.TestCase):
         SCALAR = 1 / math.sqrt(2.0)
         uct_policy = UCT()
         node = Node()
-        node.add_node(name="root")
 
         node.add_node(name="c1", parent_node = 0)
         node.backprop_from_node(1, 0.5)

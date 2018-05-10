@@ -8,7 +8,6 @@ class TestNode(unittest.TestCase):
 
     def test_add_node(self):
         node = Node()
-        node.add_node(name="root")
         assert(node.id_count == 0)
         assert(node.get_attribute(0, "name") == "root")
         node.add_node(name="v1", parent_node = 0)
@@ -16,7 +15,6 @@ class TestNode(unittest.TestCase):
 
     def test_get_path_to_node(self):
         node = Node()
-        node.add_node(name="root")
         node.add_node(name="c1", parent_node = 0)
         node.add_node(name="c2", parent_node = 0)
         node.add_node(name="b1", parent_node = 1)
@@ -30,7 +28,6 @@ class TestNode(unittest.TestCase):
 
     def test_backprop_from_node(self):
         node = Node()
-        node.add_node(name="root")
 
         node.add_node(name="c1", parent_node = 0)
         node.backprop_from_node(1, 0.5)
@@ -73,7 +70,7 @@ class TestNode(unittest.TestCase):
         x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
         x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
 
-        start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+        start = ChoiceScenario(name = "root", scenarios=[x1, x2])
 
         sampler = { "x1__p1": ([0, 1], "uniform", "float"),
                     "x1__p2": ([[1, 2]], "choice", "int"),
@@ -83,7 +80,6 @@ class TestNode(unittest.TestCase):
         space = Space(scenario = start, sampler = sampler)
 
         node = Node()
-        node.add_node(name="Model")
         node.add_node(name="x1", parent_node = 0)
         node.add_node(name="x2", parent_node = 0)
         assert(node.fully_expanded(0, space))
