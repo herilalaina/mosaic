@@ -15,9 +15,9 @@ class UCT():
         for c in childs:
             score = self.uct(node, c, scalar)
             if score == bestscore:
-                bestchildren.append(c.name)
+                bestchildren.append(c["id"])
             if score > bestscore:
-                bestchildren = [c.name]
+                bestchildren = [c["id"]]
                 bestscore = score
         if len(bestchildren) == 0:
             raise Exception("No best child found")
@@ -26,10 +26,10 @@ class UCT():
     def uct(self, node, c, scalar):
         """Calculate value of node."""
 
-        if float(c.visits) == 0:
+        if float(c["visits"]) == 0:
             return 1000
 
-        explore = math.sqrt(2.0 * math.log(node.visits) / float(c.visits))
-        exploit = c.reward / c.visits
+        explore = math.sqrt(2.0 * math.log(node["visits"]) / float(c["visits"]))
+        exploit = c["reward"] / c["visits"]
         score = exploit + (scalar * explore)
         return score

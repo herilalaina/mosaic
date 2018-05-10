@@ -7,7 +7,6 @@ import math
 import networkx as nx
 
 from mosaic.policy import UCT
-from mosaic.space import Space
 from mosaic.node import Node
 
 
@@ -20,10 +19,7 @@ class MCTS():
         self.env = env
 
         # Init tree
-        self.root = nx.DiGraph()
-        n = Node("root", value=None)
-        root_node = Node(name="root", value=None)
-        self.root.add_node("root", name="root", att=n)
+        self.tree = Node()
 
         # Set up logger
         if logfile != '':
@@ -48,52 +44,34 @@ class MCTS():
         """Search for the best child node."""
         SCALAR = 1 / math.sqrt(2.0)
 
-        node = "root"
-
-        while not nx.get_node_attributes(self.root, "att")[node].terminal:
-            childs = list(self.root.successors(node))
+        node = 0 # Root of the tree
+        while not self.tree.is_terminal(node):
+            childs = [self.tree.get_info_node(n) for n in self.tree.get_childs(node)]
             if len(childs) == 0:
                 return self.EXPAND(node)
             else:
-                if not self.root.nodes[node]["att"].fully_expanded(self.env.space, self.root):
+                if not self.tree.fully_expanded(node, self.env.space):
                     return self.EXPAND(node)
                 else:
-                    node = self.policy.BESTCHILD(self.root.nodes[node]["att"], self.list_node(node), SCALAR)
-            if len(childs) == 0:
-                break
-
+                    node = self.policy.BESTCHILD(self.tree.get_info_node(node), childs, SCALAR)
         return node
-
-    def list_node(self, node):
-        return [v["att"] for k, v in self.root.nodes.items()]
 
     def EXPAND(self, node):
         """Expand child node."""
-        tried_children = set(self.root.successors(node))
-        next_node = self.env.space.next_params(node, history = [v.name for k, v in self.root.predecessors(node).items()])
-        while True:
-            name, val = self.env.space.sample(next_node)
-            final_name = name + "=" + str(val)
-            if final_name not in tried_children:
-                break
-        node_to_add = Node(name=final_name, value=val)
-        self.root.add_node(final_name, name=val, att=node_to_add)
-        self.root.add_path([node, final_name])
-        return final_name
+        name, value, terminal = self.env.space.next_params(elf.tree.get_path_to_node(node))
+        return self.tree.add_node(name=name, value=value, terminal=terminal)
 
-    def random_policy(self, node):
+    def random_policy(self, node_id):
         """Random policy."""
-        playout_node = self.env.space.playout(self.root, node)
-        return self.env._evaluate(self.root)
+        playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
+        return self.env._evaluate(playout_node)
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
-        for parent in list(nx.ancestors(self.root, node)):
-            self.root.nodes[parent]["att"].update(reward)
+        self.tree.backprop_from_node(node, reward)
 
     def run(self, n=1):
         """Play 1 simulation."""
         for i in range(n):
             self.MCT_SEARCH()
             print(self.env.bestscore)
-        #return self.env.best_model

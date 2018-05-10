@@ -18,6 +18,7 @@ class Node():
                             max_number_child=max_number_child)
         if parent_node is not None:
             self.tree.add_path([parent_node, new_id])
+        return new_id
 
     def is_terminal(self, node_id):
         return self.tree.nodes[node_id]["terminal"]
@@ -50,6 +51,13 @@ class Node():
             self.tree.node[node_id]["max_number_child"] += 1
         self.tree.node[node_id]['reward'] = node["reward"] + reward
         self.tree.node[node_id]["visits"] += 1
+
+    def get_childs(self, node_id):
+        return list(self.tree.successors(node_id))
+
+    def get_info_node(self, node_id):
+        node = self.tree.nodes[node_id]
+        return {"id": node_id, "name": node["name"], "visits": node["visits"], "reward": node["reward"], "max_number_child": node["max_number_child"]}
 
     def get_attribute(self, node_id, attribute):
         return self.tree.nodes[node_id][attribute]

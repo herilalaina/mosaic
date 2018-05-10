@@ -64,7 +64,7 @@ class Env():
         """Method for moves evaluation."""
         return 0
 
-
+"""
 def a_func(): return 0
 def b_func(): return 0
 def c_func(): return 0
@@ -84,4 +84,4 @@ space = Space(scenario = start, sampler = sampler)
 ex_config = space.playout(history=[("Model", None)])
 
 env = Env(scenario = start, sampler = sampler)
-env.preprocess_moves(ex_config)
+env.preprocess_moves(ex_config)"""
