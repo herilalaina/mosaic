@@ -58,8 +58,8 @@ class MCTS():
 
     def EXPAND(self, node):
         """Expand child node."""
-        name, value, terminal = self.env.space.next_params(elf.tree.get_path_to_node(node))
-        return self.tree.add_node(name=name, value=value, terminal=terminal)
+        name, value, terminal = self.env.space.next_params(self.tree.get_path_to_node(node))
+        return self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
 
     def random_policy(self, node_id):
         """Random policy."""
@@ -74,4 +74,4 @@ class MCTS():
         """Play 1 simulation."""
         for i in range(n):
             self.MCT_SEARCH()
-            print(self.env.bestscore)
+            # print(self.env.bestscore)

@@ -6,6 +6,7 @@ class Node():
     def __init__(self):
         self.tree = nx.DiGraph()
         self.id_count = -1
+        self.add_node(name="root", value=None)
 
     def get_new_id(self):
         self.id_count += 1
@@ -35,7 +36,6 @@ class Node():
         nb_current_childs = len(list(self.tree.successors(node_id)))
 
         nb_child_allowed = min(nb_childs, self.get_attribute(node_id, "max_number_child"))
-
         if nb_current_childs >= nb_child_allowed:
             return True
 
@@ -47,8 +47,7 @@ class Node():
 
     def update_node(self, node_id, reward):
         node = self.tree.nodes[node_id]
-        if (node["visits"] > 0) and (int(math.log(node["visits"])) < int(math.log(node["visits"]))):
-            self.tree.node[node_id]["max_number_child"] += 1
+        self.tree.node[node_id]["max_number_child"] += int(math.pow(node["visits"], 0.7))
         self.tree.node[node_id]['reward'] = node["reward"] + reward
         self.tree.node[node_id]["visits"] += 1
 
@@ -57,7 +56,12 @@ class Node():
 
     def get_info_node(self, node_id):
         node = self.tree.nodes[node_id]
-        return {"id": node_id, "name": node["name"], "visits": node["visits"], "reward": node["reward"], "max_number_child": node["max_number_child"]}
+        return {"id": node_id,
+                "name": node["name"],
+                "value": node["value"],
+                "visits": node["visits"],
+                "reward": node["reward"],
+                "max_number_child": node["max_number_child"]}
 
     def get_attribute(self, node_id, attribute):
         return self.tree.nodes[node_id][attribute]

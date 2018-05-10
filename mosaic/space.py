@@ -25,7 +25,7 @@ class Space():
         for config, _ in history:
             scenario.execute(config)
         p = scenario.call()
-        return p, self.sample(p), scenario.queue_tasks() == []
+        return p, self.sample(p), (len(scenario.queue_tasks()) == 0)
 
     def has_finite_child(self, history=[]):
         """Return True if number of child is finite

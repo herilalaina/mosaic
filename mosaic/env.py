@@ -1,5 +1,7 @@
 """Base environement class."""
 
+from pprint import pformat
+
 from mosaic.space import Space
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
@@ -44,11 +46,11 @@ class Env():
     def _evaluate(self, list_moves = []):
         config = self.preprocess_moves(list_moves)
 
-        hash_moves = hash(tuple(a for a in config))
+        hash_moves = hash(pformat(config))
         if hash_moves in self.history:
             return self.history[hash_moves]
 
-        res = self.evaluate(config)
+        res = Env.evaluate(config)
 
         if res > self.bestconfig["score"]:
             self.bestconfig = {
@@ -60,7 +62,8 @@ class Env():
         self.history[hash_moves] = res
         return res
 
-    def evaluate(self, config):
+    @staticmethod
+    def evaluate(config):
         """Method for moves evaluation."""
         return 0
 
