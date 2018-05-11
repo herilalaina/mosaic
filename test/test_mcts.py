@@ -70,4 +70,4 @@ class TestMCTS(unittest.TestCase):
 
     def test_generate_path(self):
         mcts = self.init_mcts()
-        mcts.run(n = 20, generate_image_path = "images")
+        mcts.run(n = 100, generate_image_path = "images")

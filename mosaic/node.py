@@ -57,7 +57,7 @@ class Node():
 
     def get_label(self, node_id):
         node = self.tree.nodes[node_id]
-        return "{0}={1}\nv={2}, r={3}".format(node["name"],
+        return "{0}={1}\nv={2}\nr={3}".format(node["name"],
                                               str(node["value"])[:6],
                                               str(node["visits"]),
                                               str(node["reward"])[:6])
