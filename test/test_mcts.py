@@ -63,8 +63,8 @@ class TestMCTS(unittest.TestCase):
         r3 = mcts.random_policy(n3)
         mcts.BACKUP(n3, r3)
         assert(mcts.tree.get_attribute(0, "reward") == r1 + r2 + r3)
-        assert(mcts.tree.get_attribute(1, "reward") == r1 + r2)
-        assert(mcts.tree.get_attribute(2, "reward") == r2)
+        assert(mcts.tree.get_attribute(1, "reward") == r1 + r2 + r3)
+        assert(mcts.tree.get_attribute(2, "reward") == r2 + r3)
         assert(mcts.tree.get_attribute(3, "reward") == r3)
         assert(len(mcts.tree.tree) == 4)
 

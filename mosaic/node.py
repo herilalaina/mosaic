@@ -51,13 +51,16 @@ class Node():
 
     def update_node(self, node_id, reward):
         node = self.tree.nodes[node_id]
-        self.tree.node[node_id]["max_number_child"] += int(math.pow(node["visits"], 0.7))
+        self.tree.node[node_id]["max_number_child"] = math.ceil(math.pow(node["visits"], 0.7))
         self.tree.node[node_id]['reward'] = node["reward"] + reward
         self.tree.node[node_id]["visits"] += 1
 
     def get_label(self, node_id):
         node = self.tree.nodes[node_id]
-        return "{0}={1}\nv={2}, r={3}".format(node["name"], node["value"], node["visits"], node["reward"])
+        return "{0}={1}\nv={2}, r={3}".format(node["name"],
+                                              str(node["value"])[:6],
+                                              str(node["visits"]),
+                                              str(node["reward"])[:6])
 
     def update_labels(self):
         for i in range(len(self.tree)):
