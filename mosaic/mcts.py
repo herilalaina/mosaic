@@ -71,7 +71,7 @@ class MCTS():
         """Back propagate reward."""
         self.tree.backprop_from_node(node, reward)
 
-    def run(self, n=1, generate_image_path = ""):
+    def run(self, n = 1, generate_image_path = ""):
         """Play 1 simulation."""
         for i in range(n):
             self.MCT_SEARCH()
