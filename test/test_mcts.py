@@ -67,3 +67,7 @@ class TestMCTS(unittest.TestCase):
         assert(mcts.tree.get_attribute(2, "reward") == r2)
         assert(mcts.tree.get_attribute(3, "reward") == r3)
         assert(len(mcts.tree.tree) == 4)
+
+    def test_generate_path(self):
+        mcts = self.init_mcts()
+        mcts.run(n = 20, generate_image_path = "images")

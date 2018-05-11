@@ -1,5 +1,9 @@
 import math
+import matplotlib.pyplot as plt
 import networkx as nx
+from networkx.drawing.nx_agraph import write_dot
+from networkx.drawing.nx_agraph import graphviz_layout
+
 
 class Node():
 
@@ -18,7 +22,7 @@ class Node():
                             reward=reward, terminal=terminal,
                             max_number_child=max_number_child)
         if parent_node is not None:
-            self.tree.add_path([parent_node, new_id])
+            self.tree.add_edge(parent_node, new_id)
         return new_id
 
     def is_terminal(self, node_id):
@@ -51,8 +55,29 @@ class Node():
         self.tree.node[node_id]['reward'] = node["reward"] + reward
         self.tree.node[node_id]["visits"] += 1
 
-    def get_childs(self, node_id):
-        return list(self.tree.successors(node_id))
+    def get_label(self, node_id):
+        node = self.tree.nodes[node_id]
+        return "{0}={1}\nv={2}, r={3}".format(node["name"], node["value"], node["visits"], node["reward"])
+
+    def update_labels(self):
+        for i in range(len(self.tree)):
+            self.tree.node[i]["label"] = self.get_label(i)
+
+    def draw_tree(self, file_name = ""):
+        self.update_labels()
+        write_dot(self.tree, file_name + '.dot')
+
+    def get_childs(self, node_id, info = []):
+        if len(info) == 0:
+            return list(self.tree.successors(node_id))
+        else:
+            res = []
+            for c in list(self.tree.successors(node_id)):
+                val = (self.tree.nodes[c][info[0]], )
+                for i in range(1, len(info)):
+                    val = val + (self.tree.nodes[c][info[i]], )
+                res.append(val)
+            return res
 
     def get_info_node(self, node_id):
         node = self.tree.nodes[node_id]

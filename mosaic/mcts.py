@@ -58,7 +58,8 @@ class MCTS():
 
     def EXPAND(self, node):
         """Expand child node."""
-        name, value, terminal = self.env.space.next_params(self.tree.get_path_to_node(node))
+        name, value, terminal = self.env.space.next_params(self.tree.get_path_to_node(node),
+                                                            self.tree.get_childs(node, info = ["name", "value"]))
         return self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
 
     def random_policy(self, node_id):
@@ -70,8 +71,9 @@ class MCTS():
         """Back propagate reward."""
         self.tree.backprop_from_node(node, reward)
 
-    def run(self, n=1):
+    def run(self, n=1, generate_image_path = ""):
         """Play 1 simulation."""
         for i in range(n):
             self.MCT_SEARCH()
-            # print(self.env.bestscore)
+            if generate_image_path != "":
+                self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))

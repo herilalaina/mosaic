@@ -1,7 +1,9 @@
 """Space in which MCTS will be run."""
 
+
 from copy import deepcopy
 import random
+import time
 
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
@@ -16,16 +18,21 @@ class Space():
         else:
             return random.uniform
 
-    def next_params(self, history=[]):
+    def next_params(self, history=[], info_childs = []):
         """Return next hyperparameter
             node_name: current node (string)
             history: (node_name, value)
         """
-        scenario = deepcopy(self.scenario)
-        for config, _ in history:
-            scenario.execute(config)
-        p = scenario.call()
-        return p, self.sample(p), (len(scenario.queue_tasks()) == 0)
+        ok = False
+        while not ok:
+            scenario = deepcopy(self.scenario)
+            for config, _ in history:
+                scenario.execute(config)
+            p = scenario.call()
+            v = self.sample(p)
+            if len(info_childs) == 0 or (p, v) not in info_childs:
+                ok = True
+        return p, v, (len(scenario.queue_tasks()) == 0)
 
     def has_finite_child(self, history=[]):
         """Return True if number of child is finite
@@ -48,6 +55,7 @@ class Space():
     def sample(self, node_name):
         """Sample the next configuration.
         """
+        random.seed(time.time())
         if node_name in self.sampler:
             b, f, t = self.sampler[node_name]
             method = self.sampling_method(f)
