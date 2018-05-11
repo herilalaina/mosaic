@@ -82,7 +82,7 @@ class TestMCTS(unittest.TestCase):
                     "x2__p1": ([["a", "b", "c"]], "choice", "string"),
                     "x2__p2": ([[a_func, b_func, c_func]], "choice", "func"),
         }
-        rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = "a")]
+        rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a", "c"])]
         env = Env(scenario = start, sampler = sampler, rules = rules)
         def evaluate(config):
             return random.uniform(0, 1)

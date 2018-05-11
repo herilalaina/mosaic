@@ -115,7 +115,7 @@ class BaseRule():
         raise NotImplemented()
 
 class ChildRule(BaseRule):
-    def __init__(self, applied_to = [], parent = None, value = None):
+    def __init__(self, applied_to = [], parent = None, value = []):
         super().__init__(applied_to = applied_to)
         self.parent = parent
         self.value = value
@@ -131,7 +131,7 @@ class ChildRule(BaseRule):
                 index = self.applied_to.index(node_name)
                 has_node[index] = True
 
-        return False if (parent_value != self.value) and (True in has_node) else True
+        return False if (parent_value not in self.value) and (True in has_node) else True
 
 
 """
