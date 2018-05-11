@@ -77,3 +77,5 @@ class MCTS():
             self.MCT_SEARCH()
             if generate_image_path != "":
                 self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+            print(".", end="")
+        print("")
