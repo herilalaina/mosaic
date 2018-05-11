@@ -7,7 +7,8 @@ from networkx.drawing.nx_agraph import graphviz_layout
 
 class Node():
 
-    def __init__(self):
+    def __init__(self, widening_coef = 0.5):
+        self.widening_coef = widening_coef
         self.tree = nx.DiGraph()
         self.id_count = -1
         self.add_node(name="root", value=None)
@@ -51,7 +52,7 @@ class Node():
 
     def update_node(self, node_id, reward):
         node = self.tree.nodes[node_id]
-        self.tree.node[node_id]["max_number_child"] = math.ceil(math.pow(node["visits"], 0.7))
+        self.tree.node[node_id]["max_number_child"] = math.ceil(math.pow(node["visits"], self.widening_coef))
         self.tree.node[node_id]['reward'] = node["reward"] + reward
         self.tree.node[node_id]["visits"] += 1
 
