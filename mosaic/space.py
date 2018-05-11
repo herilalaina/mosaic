@@ -8,15 +8,24 @@ import time
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
 class Space():
-    def __init__(self, scenario = None, sampler = {}):
+    def __init__(self, scenario = None, sampler = {}, rules = []):
         self.scenario = scenario
         self.sampler = sampler
+        self.rules = rules
 
     def sampling_method(self, is_finite):
         if is_finite == "choice":
             return random.choice
         else:
             return random.uniform
+
+    def is_valid(self, config):
+        for n, v in config:
+            exec("{0}={1}".format(n, v))
+        for r in self.rules:
+            if not eval(r):
+                return False
+        return True
 
     def next_params(self, history=[], info_childs = []):
         """Return next hyperparameter
@@ -30,9 +39,9 @@ class Space():
                 scenario.execute(config)
             p = scenario.call()
             v = self.sample(p)
-            if len(info_childs) == 0 or (p, v) not in info_childs:
+            if (len(info_childs) == 0 or (p, v) not in info_childs) and self.test_rules(history + [(p, v)]):
                 ok = True
-        return p, v, (len(scenario.queue_tasks()) == 0)
+        return p, v, self.get_nb_possible_child(scenario, history + [(p, v)]) == 0
 
     def has_finite_child(self, history=[]):
         """Return True if number of child is finite
@@ -42,6 +51,8 @@ class Space():
             scenario.execute(config)
         nb_child = 0
         for next_task in scenario.queue_tasks():
+            if not self.test_rules(history + [(next_task, None)]):
+                continue
             if next_task in self.sampler:
                 b, f, t = self.sampler[next_task]
                 if f == "choice":
@@ -75,6 +86,53 @@ class Space():
             history.append((param, value_param))
 
         return history
+
+    def test_rules(self, list_nodes):
+        for r in self.rules:
+            if not r.test(list_nodes):
+                return False
+        return True
+
+    def get_rules(self, node_name):
+        list_rules = []
+        for r in self.rules:
+            if node_name in r.applied_to:
+                list_rules.append(r)
+        return list_rules
+
+    def get_nb_possible_child(self, scenario, history):
+        nb = 0
+        for child in scenario.queue_tasks():
+            if self.test_rules(history + [(child, None)]):
+                nb += 1
+        return nb
+
+class BaseRule():
+    def __init__(self, applied_to = []):
+        self.applied_to = applied_to
+
+    def test(self, list_nodes = []):
+        raise NotImplemented()
+
+class ChildRule(BaseRule):
+    def __init__(self, applied_to = [], parent = None, value = None):
+        super().__init__(applied_to = applied_to)
+        self.parent = parent
+        self.value = value
+
+    def test(self, list_nodes = []):
+        parent_value = None
+        has_node = [False] * len(self.applied_to)
+
+        for node_name, v in list_nodes:
+            if node_name == self.parent:
+                parent_value = v
+            if node_name in self.applied_to:
+                index = self.applied_to.index(node_name)
+                has_node[index] = True
+
+        return False if (parent_value != self.value) and (True in has_node) else True
+
 
 """
 def a_func(): return 0

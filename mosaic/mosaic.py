@@ -2,8 +2,8 @@ from mosaic.env import Env
 from mosaic.mcts import MCTS
 
 class Search():
-    def __init__(self, scenario = None, sampler = {}, eval_func = None, logfile = ''):
-        env = Env(scenario, sampler)
+    def __init__(self, scenario = None, sampler = {}, rules = [], eval_func = None, logfile = ''):
+        env = Env(scenario, sampler, rules)
         Env.evaluate = eval_func
         self.mcts = MCTS(env = env, logfile = logfile)
         Env.evaluate = eval_func

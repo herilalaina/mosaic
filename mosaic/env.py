@@ -10,13 +10,13 @@ class Env():
 
     terminal_state = []
 
-    def __init__(self, scenario = None, sampler = {}):
+    def __init__(self, scenario = None, sampler = {}, rules = []):
         """Constructor."""
         self.bestconfig = {
             "score": 0,
             "model": None
         }
-        self.space = Space(scenario = scenario, sampler = sampler)
+        self.space = Space(scenario = scenario, sampler = sampler, rules = rules)
         self.history = {}
 
     def rollout(self, history = []):
