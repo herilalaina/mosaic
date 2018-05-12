@@ -15,7 +15,7 @@ class TestSpace(unittest.TestCase):
         def c_func(): return 0
 
         x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
+        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2", "x2__p3"])
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
@@ -23,10 +23,12 @@ class TestSpace(unittest.TestCase):
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
                     "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
                     "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "func"),
+                    "x2__p3": Parameter("x2__p3", "lol", "constant", "string"),
         }
 
         space = Space(scenario = start, sampler = sampler)
-        for i in range(100):
+        for i in range(50):
+            assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "c"), ("x2__p2", a_func)]) == ("x2__p3", "lol", True))
             assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "c")])[0] == "x2__p2")
             assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[0] == "x2__p2")
             assert(space.next_params(history=[("Model", None), ("x2", None)])[0] == "x2__p1")
@@ -36,7 +38,7 @@ class TestSpace(unittest.TestCase):
 
     def test_is_valid(self):
         x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
+        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2", "x2__p3"])
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
@@ -44,12 +46,13 @@ class TestSpace(unittest.TestCase):
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
                     "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
                     "x2__p2": Parameter("x2__p2", [10, 11, 12], "choice", "int"),
+                    "x2__p3": Parameter("x2__p3", "lol", "constant", "string"),
         }
         rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a"])]
 
 
         space = Space(scenario = start, sampler = sampler, rules = rules)
-        assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[0] == "x2__p2")
+        assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[0] in ["x2__p2", "x2__p3"])
         assert(space.has_finite_child(history=[("Model", None), ("x2", None), ("x2__p1", "b")])[1] == 0)
         assert(space.has_finite_child(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[1] > 0)
 
