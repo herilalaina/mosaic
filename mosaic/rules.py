@@ -38,6 +38,4 @@ class ValueRule(BaseRule):
             if node_name in self.applied_to:
                 index = self.applied_to.index(node_name)
                 has_node.append((self.constraints[index][1] == v))
-
-        #print(has_node)
         return not (True in has_node and False in has_node)

@@ -51,14 +51,16 @@ class Space():
             scenario.execute(config)
         nb_child = 0
         for next_task in scenario.queue_tasks():
-            if not self.test_rules(history + [(next_task, None)]):
-                continue
             if next_task in self.sampler:
                 b, f, t = self.sampler[next_task]
+
                 if f == "choice":
-                    nb_child += len(b[0])
+                    for child_value in b[0]:
+                        if self.test_rules(history + [(next_task, child_value)]):
+                            nb_child += 1
                 else:
-                    return True, 99999
+                    if self.test_rules(history + [(next_task, None)]):
+                        return True, 99999
             else:
                 nb_child += 1
         return False, nb_child
@@ -93,6 +95,10 @@ class Space():
                 return False
         return True
 
+    def get_possible_value(self, node_name):
+        b, f, t = self.sampler[node_name]
+        return b, f
+
     def get_rules(self, node_name):
         list_rules = []
         for r in self.rules:
@@ -103,8 +109,14 @@ class Space():
     def get_nb_possible_child(self, scenario, history):
         nb = 0
         for child in scenario.queue_tasks():
-            if self.test_rules(history + [(child, None)]):
-                nb += 1
+            b, f = self.get_possible_value(child)
+            if f == "choice":
+                for child_value in b[0]:
+                    if self.test_rules(history + [(child, child_value)]):
+                        nb += 1
+            else:
+                if self.test_rules(history + [(child, None)]):
+                    nb += 1
         return nb
 
 

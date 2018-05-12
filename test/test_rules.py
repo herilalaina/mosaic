@@ -41,7 +41,8 @@ class TestRules(unittest.TestCase):
         }
 
         rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a"]),
-                 ValueRule(constraints = [("x1__p1", 0.5), ("x1__p2", 7)])]
+                 ValueRule(constraints = [("x1__p1", 0.5), ("x1__p2", 7)]),
+                 ValueRule(constraints = [("x1__p1", 0.9), ("x1__p2", 6)])]
 
         space = Space(scenario = start, sampler = sampler, rules = rules)
         assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[0] == "x2__p2")
@@ -51,3 +52,6 @@ class TestRules(unittest.TestCase):
         for i in range(10):
             assert(space.next_params(history=[("Model", None), ("x1", None), ("x1__p1", 0.3)]) != ("x1__p2", 7, True))
             assert(space.next_params(history=[("Model", None), ("x1", None), ("x1__p1", 0.5)]) == ("x1__p2", 7, True))
+            assert(space.next_params(history=[("Model", None), ("x1", None), ("x1__p1", 0.8)]) != ("x1__p2", 7, True))
+            assert(space.next_params(history=[("Model", None), ("x1", None), ("x1__p1", 0.9)]) != ("x1__p2", 7, True))
+            assert(space.next_params(history=[("Model", None), ("x1", None), ("x1__p1", 0.9)]) == ("x1__p2", 6, True))
