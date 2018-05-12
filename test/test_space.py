@@ -1,6 +1,6 @@
 import unittest
 
-from mosaic.space import Space
+from mosaic.space import Space, Parameter
 from mosaic.rules import ChildRule, ValueRule
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
@@ -19,10 +19,10 @@ class TestSpace(unittest.TestCase):
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
-        sampler = { "x1__p1": ([0, 1], "uniform", "float"),
-                    "x1__p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-                    "x2__p1": ([["a", "b", "c", "d"]], "choice", "string"),
-                    "x2__p2": ([[a_func, b_func, c_func]], "choice", "func"),
+        sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
+                    "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
+                    "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
+                    "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "func"),
         }
 
         space = Space(scenario = start, sampler = sampler)
@@ -40,14 +40,12 @@ class TestSpace(unittest.TestCase):
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
-        sampler = { "x1__p1": ([0, 1], "uniform", "float"),
-                    "x1__p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-                    "x2__p1": ([["a", "b", "c", "d"]], "choice", "string"),
-                    "x2__p2": ([[10, 11, 12]], "choice", "func"),
+        sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
+                    "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
+                    "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
+                    "x2__p2": Parameter("x2__p2", [10, 11, 12], "choice", "int"),
         }
-
-        rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a"]),
-                 ]
+        rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a"])]
 
 
         space = Space(scenario = start, sampler = sampler, rules = rules)
@@ -66,10 +64,10 @@ class TestSpace(unittest.TestCase):
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
-        sampler = { "x1__p1": ([0, 1], "uniform", "float"),
-                    "x1__p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-                    "x2__p1": ([["a", "b", "c", "d"]], "choice", "string"),
-                    "x2__p2": ([[a_func, b_func, c_func]], "choice", "func"),
+        sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
+                    "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
+                    "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
+                    "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "func"),
         }
 
         space = Space(scenario = start, sampler = sampler)
@@ -92,10 +90,10 @@ class TestSpace(unittest.TestCase):
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
-        sampler = { "x1__p1": ([0, 1], "uniform", "float"),
-                    "x1__p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-                    "x2__p1": ([["a", "b", "c", "d"]], "choice", "string"),
-                    "x2__p2": ([[a_func, b_func, c_func]], "choice", "func"),
+        sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
+                    "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
+                    "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
+                    "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "func"),
         }
 
         space = Space(scenario = start, sampler = sampler)
@@ -113,16 +111,16 @@ class TestSpace(unittest.TestCase):
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
-        sampler = { "x1__p1": ([0, 1], "uniform", "float"),
-                    "x1__p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-                    "x2__p1": ([["a", "b", "c", "d"]], "choice", "string"),
-                    "x2__p2": ([[a_func, b_func, c_func]], "choice", "func"),
+        sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
+                    "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
+                    "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
+                    "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "func"),
         }
 
         space = Space(scenario = start, sampler = sampler)
 
         assert(space.has_finite_child(history = [("Model", None)]) == (False, 2))
-        assert(space.has_finite_child(history = [("Model", None), ("x1", None)]) == (True, 99999))
+        assert(space.has_finite_child(history = [("Model", None), ("x1", None)]) == (True, float("inf")))
         assert(space.has_finite_child(history = [("Model", None), ("x1", None), ("x1__p1", 0.5)]) == (False, 7))
         assert(space.has_finite_child(history = [("Model", None), ("x1", None), ("x1__p1", 0.5), ("x1__p2", 1)]) == (False, 0))
         assert(space.has_finite_child(history = [("Model", None), ("x2", None)]) == (False, 4))

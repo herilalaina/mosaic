@@ -2,7 +2,7 @@ import unittest
 
 from mosaic.env import Env
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
-from mosaic.space import Space
+from mosaic.space import Space, Parameter
 
 class TestEnv(unittest.TestCase):
 
@@ -16,10 +16,10 @@ class TestEnv(unittest.TestCase):
 
         start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
 
-        sampler = { "x1__p1": ([0, 1], "uniform", "float"),
-                    "x1__p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-                    "x2__p1": ([["a", "b", "c", "d"]], "choice", "string"),
-                    "x2__p2": ([[a_func, b_func, c_func]], "choice", "func"),
+        sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
+                    "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
+                    "x2__p1": Parameter("x2__p1", ["a", "b", "c", "d"], "choice", "string"),
+                    "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "func"),
         }
 
         space = Space(scenario = start, sampler = sampler)
