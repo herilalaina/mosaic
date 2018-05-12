@@ -1,6 +1,7 @@
 import unittest
 
-from mosaic.space import Space, ChildRule
+from mosaic.space import Space
+from mosaic.rules import ChildRule, ValueRule
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
 class TestSpace(unittest.TestCase):
@@ -45,7 +46,11 @@ class TestSpace(unittest.TestCase):
                     "x2__p2": ([[10, 11, 12]], "choice", "func"),
         }
 
-        space = Space(scenario = start, sampler = sampler, rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a"])])
+        rules = [ChildRule(applied_to = ["x2__p2"], parent = "x2__p1", value = ["a"]),
+                 ]
+
+
+        space = Space(scenario = start, sampler = sampler, rules = rules)
         assert(space.next_params(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[0] == "x2__p2")
         assert(space.has_finite_child(history=[("Model", None), ("x2", None), ("x2__p1", "b")])[1] == 0)
         assert(space.has_finite_child(history=[("Model", None), ("x2", None), ("x2__p1", "a")])[1] > 0)

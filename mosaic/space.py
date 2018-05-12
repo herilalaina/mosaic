@@ -107,32 +107,6 @@ class Space():
                 nb += 1
         return nb
 
-class BaseRule():
-    def __init__(self, applied_to = []):
-        self.applied_to = applied_to
-
-    def test(self, list_nodes = []):
-        raise NotImplemented()
-
-class ChildRule(BaseRule):
-    def __init__(self, applied_to = [], parent = None, value = []):
-        super().__init__(applied_to = applied_to)
-        self.parent = parent
-        self.value = value
-
-    def test(self, list_nodes = []):
-        parent_value = None
-        has_node = [False] * len(self.applied_to)
-
-        for node_name, v in list_nodes:
-            if node_name == self.parent:
-                parent_value = v
-            if node_name in self.applied_to:
-                index = self.applied_to.index(node_name)
-                has_node[index] = True
-
-        return False if (parent_value not in self.value) and (True in has_node) else True
-
 
 """
 def a_func(): return 0

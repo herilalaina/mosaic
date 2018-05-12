@@ -13,7 +13,7 @@ from mosaic.node import Node
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, logfile='', widening_coef = None):
+    def __init__(self, env, logfile='', widening_coef = 0.5):
         """Initialization."""
         # environement
         self.env = env

@@ -5,7 +5,8 @@ import random
 from mosaic.env import Env
 from mosaic.mcts import MCTS
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
-from mosaic.space import Space, ChildRule
+from mosaic.space import Space
+from mosaic.rules import ChildRule
 
 
 class TestMCTS(unittest.TestCase):
