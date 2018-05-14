@@ -11,7 +11,7 @@ class Node():
         self.widening_coef = widening_coef
         self.tree = nx.DiGraph()
         self.id_count = -1
-        self.add_node(name="root", value=None)
+        self.add_node(name = "root", value=None)
 
     def get_new_id(self):
         self.id_count += 1

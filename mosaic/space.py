@@ -9,7 +9,10 @@ from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
 class Space():
     def __init__(self, scenario = None, sampler = {}, rules = []):
-        self.scenario = scenario
+        if not isinstance(scenario, ComplexScenario) and not isinstance(scenario, ChoiceScenario):
+            self.scenario = ChoiceScenario(name = "root", scenarios = [scenario])
+        else:
+            self.scenario = scenario
         self.sampler = sampler
         self.rules = rules
 
@@ -117,7 +120,10 @@ class Parameter():
         if self.type_sampling == "choice":
             return random.choice(self.value_list)
         elif self.type_sampling == "uniform":
-            return random.uniform(self.value_list[0], self.value_list[1])
+            if self.type == 'int':
+                return random.randint(self.value_list[0], self.value_list[1])
+            else:
+                return random.uniform(self.value_list[0], self.value_list[1])
         else:
             return self.value_list
 
