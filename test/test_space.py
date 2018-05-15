@@ -123,7 +123,7 @@ class TestSpace(unittest.TestCase):
         space = Space(scenario = start, sampler = sampler)
 
         assert(space.has_finite_child(history = [("Model", None)]) == (False, 2))
-        assert(space.has_finite_child(history = [("Model", None), ("x1", None)]) == (True, float("inf")))
+        assert(space.has_finite_child(history = [("Model", None), ("x1", None)]) == (False, 17))
         assert(space.has_finite_child(history = [("Model", None), ("x1", None), ("x1__p1", 0.5)]) == (False, 7))
         assert(space.has_finite_child(history = [("Model", None), ("x1", None), ("x1__p1", 0.5), ("x1__p2", 1)]) == (False, 0))
         assert(space.has_finite_child(history = [("Model", None), ("x2", None)]) == (False, 4))

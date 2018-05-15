@@ -48,7 +48,7 @@ class TestScenario(unittest.TestCase):
 
         assert(start.queue_tasks() == ["Model"])
         start.call()
-        assert(start.queue_tasks() == ["x1", "x2"])
+        assert(start.queue_tasks() == ["x1"])
         start.call()
         assert(start.queue_tasks() == ["x1_p1"])
         start.call()
@@ -84,3 +84,22 @@ class TestScenario(unittest.TestCase):
         assert(start.call() == "x2_p1")
         assert(start.call() == "x2_p2")
         assert(start.finished())
+
+    def test_choice_complex_scenario(self):
+        arr1 = ["x1_p1", "x1_p2"]
+        arr2 = ["x2_p1", "x2_p2"]
+        arr3 = ["x3_p1", "x3_p2"]
+        arr4 = ["x4_p1", "x4_p2"]
+
+        x1 = ListTask(name = "x1", is_ordered=False, tasks = arr1)
+        x2 = ListTask(name = "x2", is_ordered=True, tasks = arr2)
+        x3 = ListTask(name = "x3", is_ordered=False, tasks = arr3)
+        x4 = ListTask(name = "x4", is_ordered=True, tasks = arr4)
+
+        c1 = ChoiceScenario(name = "choix_1", scenarios=[x1, x2])
+        c2 = ChoiceScenario(name = "choix_2", scenarios=[x3, x4])
+
+        start = ComplexScenario(name = "Model", scenarios=[c1, c2], is_ordered = True)
+
+        assert(start.call() == "Model")
+        assert(start.queue_tasks() == ["choix_1"])

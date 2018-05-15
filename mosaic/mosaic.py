@@ -3,7 +3,7 @@ from mosaic.mcts import MCTS
 
 class Search():
     def __init__(self, scenario = None, sampler = {}, rules = [],
-                 eval_func = None, logfile = '', widening_coef = 0.5):
+                 eval_func = None, logfile = '', widening_coef = 0.3):
         env = Env(scenario, sampler, rules)
         Env.evaluate = eval_func
         self.mcts = MCTS(env = env, logfile = logfile, widening_coef = widening_coef)

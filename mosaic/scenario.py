@@ -136,13 +136,17 @@ class ComplexScenario(BaseScenario):
             return task
 
     def queue_tasks(self):
+
         if len(self.queue) == 0:
             return []
 
         if self.executed_name_algo:
             return [self.name]
         elif self.queue[0].executed_name_algo:
-            return [s.name for s in self.queue]
+            if self.is_ordered:
+                return [self.queue[0].name]
+            else:
+                return [s.name for s in self.queue]
         else:
             return self.queue[0].queue_tasks()
 

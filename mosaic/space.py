@@ -6,6 +6,7 @@ import random
 import time
 
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.utils import random_uniform_on_log_space
 
 class Space():
     def __init__(self, scenario = None, sampler = {}, rules = []):
@@ -26,6 +27,7 @@ class Space():
             scenario = self.generate_playout_scenario(history = history)
             param = scenario.call()
             val = self.sample(param)
+            # print(history, param, val, self.test_rules(history + [(param, val)]), info_childs)
             if (len(info_childs) == 0 or (param, val) not in info_childs) and self.test_rules(history + [(param, val)]):
                 ok = True
         return param, val, self.get_nb_possible_child(history + [(param, val)]) == 0
@@ -48,14 +50,17 @@ class Space():
             return None
 
     def playout(self, history=[]):
-        scenario = self.generate_playout_scenario(history = history)
+        if self.get_nb_possible_child(history=history) == 0:
+            return history
 
-        while(not scenario.finished()):
-            param = scenario.call()
-            value_param = self.sample(param)
-            history.append((param, value_param))
+        res_final = deepcopy(history)
+        final = False
 
-        return history
+        while not final:
+            param, value, final = self.next_params(history = res_final)
+            res_final.append((param, value))
+
+        return res_final
 
     def test_rules(self, list_nodes):
         for r in self.rules:
@@ -90,15 +95,20 @@ class Space():
                     if self.test_rules(history + [(child, value_list)]):
                         nb += 1
                 elif type_sampling == "uniform":
-                    return float('inf')
+                    for i in range(10):
+                        child_value = self.sample(child)
+                        if self.test_rules(history + [(child, child_value)]):
+                            nb += 1
             else:
                 nb += 1
         return nb
 
     def generate_playout_scenario(self, history = []):
         scenario = deepcopy(self.scenario)
+
         for config, value in history:
             scenario.execute(config)
+
         return scenario
 
 
@@ -110,7 +120,7 @@ class Parameter():
         self.type_sampling = type_sampling
         self.type = type
 
-        if type_sampling not in ["uniform", "choice", "constant"]:
+        if type_sampling not in ["uniform", "choice", "constant", "log_uniform"]:
             raise Exception("Can not handle {0} type".format(self.type))
 
     def get_info(self):
@@ -124,8 +134,10 @@ class Parameter():
                 return random.randint(self.value_list[0], self.value_list[1])
             else:
                 return random.uniform(self.value_list[0], self.value_list[1])
-        else:
+        elif self.type_sampling == "constant":
             return self.value_list
+        elif self.type_sampling == "log_uniform":
+            return random_uniform_on_log_space(self.value_list[0], self.value_list[1])
 
 
 """
