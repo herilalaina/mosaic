@@ -26,7 +26,7 @@ class TestMCTS(unittest.TestCase):
         }
 
         env = Env(scenario = start, sampler = sampler)
-        def evaluate(config):
+        def evaluate(config, bestconfig):
             return random.uniform(0, 1)
         Env.evaluate = evaluate
         return MCTS(env = env)
@@ -92,7 +92,7 @@ class TestMCTS(unittest.TestCase):
             ValueRule(constraints = [("x1__p2", 2), ("x1__p3", "w")])
         ]
         env = Env(scenario = start, sampler = sampler, rules = rules)
-        def evaluate(config):
+        def evaluate(config, bestconfig):
             return random.uniform(0, 1)
         Env.evaluate = evaluate
 
