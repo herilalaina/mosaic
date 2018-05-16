@@ -5,6 +5,7 @@ from copy import deepcopy
 import random
 import time
 
+from mosaic.rules import ChildRule
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 from mosaic.utils import random_uniform_on_log_space
 
@@ -31,6 +32,13 @@ class Space():
             if (len(info_childs) == 0 or (param, val) not in info_childs) and self.test_rules(history + [(param, val)]):
                 ok = True
         return param, val, self.get_nb_possible_child(history + [(param, val)]) == 0
+
+    def can_be_executed(self, param, history):
+        for rule in self.rules:
+            if isinstance(rule, ChildRule) and name in rule.applied_to:
+                for parent, value_parent in history:
+                    if parent == rule.parent and value_parent in rule.value:
+                        return True
 
     def has_finite_child(self, history=[]):
         """Return True if number of child is finite
@@ -84,6 +92,7 @@ class Space():
 
         scenario = self.generate_playout_scenario(history = history)
 
+        # print(">>>>>>>>>>", history, scenario.queue_tasks())
         for child in scenario.queue_tasks():
             if child in self.sampler:
                 value_list, type_sampling = self.get_possible_value(child)
@@ -108,6 +117,7 @@ class Space():
 
         for config, value in history:
             scenario.execute(config)
+            scenario.actualize_queue(config, value)
 
         return scenario
 

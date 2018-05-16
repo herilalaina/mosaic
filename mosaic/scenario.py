@@ -1,11 +1,35 @@
 import random
 
+from mosaic.rules import ChildRule
 
 class BaseScenario():
-    def __init__(self, queue, name):
-        self.queue = queue
+    def __init__(self, queue, name, rules):
         self.name = name
         self.executed_name_algo = True
+        self.rules = rules
+
+        self.queue = [node for node in queue if not self.child_task(node)]
+
+    def add_to_current_queue(self, new_node):
+        if isinstance(self, ListTask):
+            self.queue.append(new_node)
+        elif isinstance(self, ChoiceScenario):
+            self.choosed_scenario.add_to_current_queue(new_node)
+        elif isinstance(self, ComplexScenario):
+            self.queue[0].append(new_node)
+
+    def child_task(self, node):
+        for rule in self.rules:
+            if isinstance(rule, ChildRule) and node in rule.applied_to:
+                return True
+        return False
+
+    def actualize_queue(self, parent, parent_value):
+        for rule in self.rules:
+            if isinstance(rule, ChildRule) and parent_value in rule.value and parent == rules.parent:
+                for n in rule.applied_to:
+                    self.add_to_current_queue(n)
+
 
     def call(self):
         if self.finished():
@@ -32,8 +56,8 @@ class BaseScenario():
         return self.queue
 
 class ListTask(BaseScenario):
-    def __init__(self, name=None, tasks = [], is_ordered = True):
-        super().__init__(queue=tasks, name=name)
+    def __init__(self, name=None, tasks = [], is_ordered = True, rules = []):
+        super().__init__(queue=tasks, name=name, rules = rules)
         self.is_ordered = is_ordered
 
     def _call(self):
@@ -65,8 +89,8 @@ class ListTask(BaseScenario):
             return self.queue
 
 class ChoiceScenario(BaseScenario):
-    def __init__(self, name = None, scenarios = [], nb_choice = 1):
-        super().__init__(queue=scenarios, name=name)
+    def __init__(self, name = None, scenarios = [], nb_choice = 1, rules = []):
+        super().__init__(queue=scenarios, name=name, rules = rules)
         self.nb_choice = nb_choice
         self.choosed = False
 
@@ -103,8 +127,8 @@ class ChoiceScenario(BaseScenario):
         return self.choosed_scenario.finished()
 
 class ComplexScenario(BaseScenario):
-    def __init__(self, name = None, scenarios = [], is_ordered = True):
-        super().__init__(queue = scenarios, name =  name)
+    def __init__(self, name = None, scenarios = [], is_ordered = True, rules = []):
+        super().__init__(queue = scenarios, name =  name, rules = rules)
         self.is_ordered = is_ordered
 
         if self.is_ordered == False:

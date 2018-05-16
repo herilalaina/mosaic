@@ -4,9 +4,9 @@ from mosaic.mcts import MCTS
 class Search():
     def __init__(self, scenario = None, sampler = {}, rules = [],
                  eval_func = None, logfile = '', widening_coef = 0.3):
-        env = Env(scenario, sampler, rules)
+        env = Env(scenario, sampler, rules, logfile)
         Env.evaluate = eval_func
-        self.mcts = MCTS(env = env, logfile = logfile, widening_coef = widening_coef)
+        self.mcts = MCTS(env = env, widening_coef = widening_coef)
         Env.evaluate = eval_func
 
     def run(self, nb_simulation = 1, generate_image_path = ""):

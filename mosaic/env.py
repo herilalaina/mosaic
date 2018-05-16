@@ -1,5 +1,7 @@
 """Base environement class."""
 
+import time
+
 from pprint import pformat
 
 from mosaic.space import Space
@@ -9,15 +11,17 @@ class Env():
     """Base class for environement."""
 
     terminal_state = []
+    bestconfig = {
+        "score": 0,
+        "model": None
+    }
 
-    def __init__(self, scenario = None, sampler = {}, rules = []):
+    def __init__(self, scenario = None, sampler = {}, rules = [], logfile = ""):
         """Constructor."""
-        self.bestconfig = {
-            "score": 0,
-            "model": None
-        }
         self.space = Space(scenario = scenario, sampler = sampler, rules = rules)
         self.history = {}
+        self.start_time = time.time()
+        self.logfile = logfile
 
     def rollout(self, history = []):
         return self.space.playout(history)
@@ -50,20 +54,26 @@ class Env():
         if hash_moves in self.history:
             return self.history[hash_moves]
 
-        res = Env.evaluate(config)
+        res = Env.evaluate(config, self.bestconfig)
 
         if res > self.bestconfig["score"]:
             self.bestconfig = {
                 "score": res,
                 "model": config
             }
+            self.log_result()
 
         # Add into history
         self.history[hash_moves] = res
         return res
 
+    def log_result(self):
+        if self.logfile != "":
+            with open(self.logfile, "a+") as f:
+                f.write("{0},{1}\n".format(time.time() - self.start_time, self.bestconfig["score"]))
+
     @staticmethod
-    def evaluate(config):
+    def evaluate(config, bestconfig):
         """Method for moves evaluation."""
         return 0
 

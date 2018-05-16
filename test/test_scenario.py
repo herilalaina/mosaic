@@ -91,9 +91,9 @@ class TestScenario(unittest.TestCase):
         arr3 = ["x3_p1", "x3_p2"]
         arr4 = ["x4_p1", "x4_p2"]
 
-        x1 = ListTask(name = "x1", is_ordered=False, tasks = arr1)
+        x1 = ListTask(name = "x1", is_ordered=True, tasks = arr1)
         x2 = ListTask(name = "x2", is_ordered=True, tasks = arr2)
-        x3 = ListTask(name = "x3", is_ordered=False, tasks = arr3)
+        x3 = ListTask(name = "x3", is_ordered=True, tasks = arr3)
         x4 = ListTask(name = "x4", is_ordered=True, tasks = arr4)
 
         c1 = ChoiceScenario(name = "choix_1", scenarios=[x1, x2])
@@ -103,3 +103,11 @@ class TestScenario(unittest.TestCase):
 
         assert(start.call() == "Model")
         assert(start.queue_tasks() == ["choix_1"])
+        assert(start.call() == "choix_1")
+        assert(start.call() in ["x1", "x2"])
+        assert(start.call() in ["x1_p1", "x2_p1"])
+        assert(start.call() in ["x1_p2", "x2_p2"])
+        assert(start.call() == "choix_2")
+        assert(start.call() in ["x3", "x4"])
+        assert(start.call() in ["x3_p1", "x4_p1"])
+        assert(start.call() in ["x3_p2", "x4_p2"])
