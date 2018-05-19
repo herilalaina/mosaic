@@ -53,8 +53,8 @@ class MCTS():
                 if not self.tree.fully_expanded(node, self.env.space):
                     return self.EXPAND(node)
                 else:
-                    if random.uniform(0, 1) < 0.3:
-                        return random.choice(childs)
+                    if random.uniform(0, 1) < 0.1:
+                        return random.choice(self.tree.get_childs(node))
                     node = self.policy.BESTCHILD(self.tree.get_info_node(node), childs, SCALAR)
         return node
 
