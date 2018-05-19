@@ -103,7 +103,7 @@ class Space():
                 elif type_sampling == "constant":
                     if self.test_rules(history + [(child, value_list)]):
                         nb += 1
-                elif type_sampling == "uniform":
+                elif type_sampling in ["uniform", "log_uniform"]:
                     for i in range(10):
                         child_value = self.sample(child)
                         if self.test_rules(history + [(child, child_value)]):
