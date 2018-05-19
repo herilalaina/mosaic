@@ -75,7 +75,7 @@ class MCTS():
         """Play 1 simulation."""
         for i in range(n):
             self.MCT_SEARCH()
-            if generate_image_path != "":
-                self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
-            print(".", end="")
+            #if generate_image_path != "":
+            #    self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+            #print(".", end="")
         print("")
