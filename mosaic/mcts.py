@@ -54,8 +54,9 @@ class MCTS():
                     return self.EXPAND(node)
                 else:
                     if random.uniform(0, 1) < 0.1:
-                        return random.choice(self.tree.get_childs(node))
-                    node = self.policy.BESTCHILD(self.tree.get_info_node(node), childs, SCALAR)
+                        node = random.choice(self.tree.get_childs(node))
+                    else:
+                        node = self.policy.BESTCHILD(self.tree.get_info_node(node), childs, SCALAR)
         return node
 
     def EXPAND(self, node):
