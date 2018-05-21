@@ -8,18 +8,23 @@ import networkx as nx
 
 from mosaic.policy import UCT
 from mosaic.node import Node
+from mosaic.rave import RAVE
 
 
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, logfile='', widening_coef = 0.5):
+    def __init__(self, env, logfile='', widening_coef = 0.5, use_rave=True):
         """Initialization."""
         # environement
         self.env = env
 
         # Init tree
         self.tree = Node(widening_coef = widening_coef)
+
+        # Use rave
+        if use_rave:
+            self.rave = RAVE()
 
         # Set up logger
         if logfile != '':
@@ -36,8 +41,9 @@ class MCTS():
     def MCT_SEARCH(self):
         """MCTS method."""
         front = self.TREEPOLICY()
-        reward = self.random_policy(front)
-        self.BACKUP(front, reward)
+        for i in range(10):
+            reward = self.random_policy(front)
+            self.BACKUP(front, reward)
         #return self.policy.BESTCHILD(, 0)
 
     def TREEPOLICY(self):
@@ -53,11 +59,19 @@ class MCTS():
                 if not self.tree.fully_expanded(node, self.env.space):
                     return self.EXPAND(node)
                 else:
-                    if random.uniform(0, 1) < 0.1:
-                        node = random.choice(self.tree.get_childs(node))
-                    else:
-                        node = self.policy.BESTCHILD(self.tree.get_info_node(node), childs, SCALAR)
+                    info_node = self.tree.get_info_node(node)
+                    node = self.policy.BESTCHILD(info_node, self.stat_child(info_node, childs), SCALAR)
         return node
+
+    def stat_child(self, node, childs):
+        if not hasattr(self, "rave"):
+            return childs
+        source = node["name"]
+        new_info_child = []
+        for child in childs:
+            child["rave_score"] = self.rave.get_score(source, child["name"])
+            new_info_child.append(child)
+        return new_info_child
 
     def EXPAND(self, node):
         """Expand child node."""
@@ -68,7 +82,9 @@ class MCTS():
     def random_policy(self, node_id):
         """Random policy."""
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
-        return self.env._evaluate(playout_node)
+        score = self.env._evaluate(playout_node)
+        self.rave.update(playout_node, score)
+        return score
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
