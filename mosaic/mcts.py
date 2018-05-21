@@ -41,10 +41,14 @@ class MCTS():
     def MCT_SEARCH(self):
         """MCTS method."""
         front = self.TREEPOLICY()
-        for i in range(10):
+        list_score = 0
+        for i in range(5):
             reward = self.random_policy(front)
-            self.BACKUP(front, reward)
-        #return self.policy.BESTCHILD(, 0)
+            if reward > 0 or list_score == 4:
+                self.BACKUP(front, reward)
+            else:
+                list_score += 1
+            #return self.policy.BESTCHILD(, 0)
 
     def TREEPOLICY(self):
         """Search for the best child node."""
@@ -83,7 +87,8 @@ class MCTS():
         """Random policy."""
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         score = self.env._evaluate(playout_node)
-        self.rave.update(playout_node, score)
+        if score > 0:
+            self.rave.update(playout_node, score)
         return score
 
     def BACKUP(self, node, reward):
