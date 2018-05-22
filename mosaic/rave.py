@@ -9,9 +9,9 @@ class RAVE():
             # Nothing to do
             return
 
-        source = moves[0][0]
+        source = moves[0][0] + "_" + str(moves[0][1])
         for i in range(1, len_moves):
-            destination = moves[i][0]
+            destination = moves[i][0] + "_" + str(moves[i][1])
             if source in self.rave_scores:
                 if destination in self.rave_scores[source]:
                     info_action = self.rave_scores[source][destination]

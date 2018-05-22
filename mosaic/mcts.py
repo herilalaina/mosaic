@@ -41,14 +41,8 @@ class MCTS():
     def MCT_SEARCH(self):
         """MCTS method."""
         front = self.TREEPOLICY()
-        list_score = 0
-        for i in range(5):
-            reward = self.random_policy(front)
-            if reward > 0 or list_score == 4:
-                self.BACKUP(front, reward)
-            else:
-                list_score += 1
-            #return self.policy.BESTCHILD(, 0)
+        reward = self.random_policy(front)
+        self.BACKUP(front, reward)
 
     def TREEPOLICY(self):
         """Search for the best child node."""
@@ -70,10 +64,11 @@ class MCTS():
     def stat_child(self, node, childs):
         if not hasattr(self, "rave"):
             return childs
-        source = node["name"]
+        source = node["name"] + "_" + str(node["value"])
         new_info_child = []
         for child in childs:
-            child["rave_score"] = self.rave.get_score(source, child["name"])
+            dest = child["name"] + "_" + str(child["value"])
+            child["rave_score"] = self.rave.get_score(source, dest)
             new_info_child.append(child)
         return new_info_child
 
