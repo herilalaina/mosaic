@@ -7,7 +7,7 @@ import networkx as nx
 
 class UCT():
     """Implements the UCT algorithm."""
-    def __init__(self, use_rave = True):
+    def __init__(self, use_rave = False):
         self.use_rave = use_rave
 
     def BESTCHILD(self, node, childs, scalar):
@@ -34,6 +34,7 @@ class UCT():
         explore = math.sqrt(2.0 * math.log(node["visits"]) / float(c["visits"]))
         if not self.use_rave:
             score = c["reward"] + (scalar * explore)
+            return score
         else:
             k = 200
             beta = math.sqrt(k / (3 * node["visits"] + k))

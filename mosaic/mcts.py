@@ -41,8 +41,9 @@ class MCTS():
     def MCT_SEARCH(self):
         """MCTS method."""
         front = self.TREEPOLICY()
-        reward = self.random_policy(front)
-        self.BACKUP(front, reward)
+        for i in range(10):
+            reward = self.random_policy(front)
+            self.BACKUP(front, reward)
 
     def TREEPOLICY(self):
         """Search for the best child node."""
@@ -58,7 +59,7 @@ class MCTS():
                     return self.EXPAND(node)
                 else:
                     info_node = self.tree.get_info_node(node)
-                    node = self.policy.BESTCHILD(info_node, self.stat_child(info_node, childs), SCALAR)
+                    node = self.policy.BESTCHILD(info_node, childs, SCALAR)
         return node
 
     def stat_child(self, node, childs):
@@ -82,8 +83,8 @@ class MCTS():
         """Random policy."""
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         score = self.env._evaluate(playout_node)
-        if score > 0:
-            self.rave.update(playout_node, score)
+        #if score > 0:
+        #    self.rave.update(playout_node, score)
         return score
 
     def BACKUP(self, node, reward):
@@ -94,7 +95,7 @@ class MCTS():
         """Play 1 simulation."""
         for i in range(n):
             self.MCT_SEARCH()
-            #if generate_image_path != "":
-            #    self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
-            #print(".", end="")
+            if generate_image_path != "":
+                self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+            print(".", end="")
         print("")
