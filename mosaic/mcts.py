@@ -41,9 +41,11 @@ class MCTS():
     def MCT_SEARCH(self):
         """MCTS method."""
         front = self.TREEPOLICY()
-        for i in range(10):
+        scores = [0]
+        for i in range(3):
             reward = self.random_policy(front)
-            self.BACKUP(front, reward)
+            scores.append(reward)
+        self.BACKUP(front, max(scores))
 
     def TREEPOLICY(self):
         """Search for the best child node."""
