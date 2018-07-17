@@ -9,6 +9,7 @@ import random
 
 from scipy.optimize import basinhopping, differential_evolution
 from mosaic.mosaic import Search
+from mosaic.space import Parameter
 from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
 
 # Function to optimize

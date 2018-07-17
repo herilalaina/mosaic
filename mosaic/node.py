@@ -52,16 +52,22 @@ class Node():
 
     def update_node(self, node_id, reward):
         node = self.tree.nodes[node_id]
-        self.tree.node[node_id]["max_number_child"] = math.ceil(math.pow(node["visits"], self.widening_coef))
+        self.tree.node[node_id]["max_number_child"] = math.floor(math.pow(node["visits"] + 1, self.widening_coef))
         self.tree.node[node_id]['reward'] = node["reward"] + (reward - node["reward"]) / (node["visits"] + 1)
         self.tree.node[node_id]["visits"] += 1
 
     def get_label(self, node_id):
         node = self.tree.nodes[node_id]
-        return "{0}={1}\nv={2}\nr={3}".format(node["name"],
-                                              str(node["value"])[:6],
-                                              str(node["visits"]),
-                                              str(node["reward"])[:6])
+        node_val = node["value"] if not callable(node["value"]) else node["value"].__name__
+        if node["value"] is not None:
+            return "{0}={1}\n({2}, {3})".format(node["name"],
+                                                  str(node_val)[:7],
+                                                  str(node["visits"]),
+                                                  str(node["reward"])[:4])
+        else:
+            return "{0}\n({1}, {2})".format(node["name"],
+                                                  str(node["visits"]),
+                                                  str(node["reward"])[:4])
 
     def update_labels(self):
         for i in range(len(self.tree)):
@@ -87,7 +93,7 @@ class Node():
         node = self.tree.nodes[node_id]
         return {"id": node_id,
                 "name": node["name"],
-                "value": node["value"],
+                "value": node["value"] if not callable(node["value"]) else node["value"].__name__,
                 "visits": node["visits"],
                 "reward": node["reward"],
                 "max_number_child": node["max_number_child"]}
