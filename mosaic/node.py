@@ -1,4 +1,3 @@
-import math
 import matplotlib.pyplot as plt
 import networkx as nx
 from networkx.drawing.nx_agraph import write_dot
@@ -7,8 +6,7 @@ from networkx.drawing.nx_agraph import graphviz_layout
 
 class Node():
 
-    def __init__(self, widening_coef = 0.5):
-        self.widening_coef = widening_coef
+    def __init__(self):
         self.tree = nx.DiGraph()
         self.id_count = -1
         self.add_node(name = "root", value=None)
@@ -45,16 +43,6 @@ class Node():
             return True
 
         return False
-
-    def backprop_from_node(self, node_id, reward):
-        for parent in self.get_path_to_node(node_id=node_id, name =False):
-            self.update_node(parent, reward)
-
-    def update_node(self, node_id, reward):
-        node = self.tree.nodes[node_id]
-        self.tree.node[node_id]["max_number_child"] = math.floor(math.pow(node["visits"] + 1, self.widening_coef))
-        self.tree.node[node_id]['reward'] = node["reward"] + (reward - node["reward"]) / (node["visits"] + 1)
-        self.tree.node[node_id]["visits"] += 1
 
     def get_label(self, node_id):
         node = self.tree.nodes[node_id]

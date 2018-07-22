@@ -97,4 +97,4 @@ class TestMCTS(unittest.TestCase):
         Env.evaluate = evaluate
 
         mcts = MCTS(env = env)
-        mcts.run(n = 100, generate_image_path = "images")
+        mcts.run(n = 100)

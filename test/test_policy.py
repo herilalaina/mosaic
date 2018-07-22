@@ -2,7 +2,7 @@ import math
 import unittest
 
 from mosaic.node import Node
-from mosaic.policy import UCT
+from mosaic.strategy.policy import UCT
 
 class TestPolicy(unittest.TestCase):
 
