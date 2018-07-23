@@ -8,10 +8,10 @@ import logging
 
 class Search:
     def __init__(self, scenario = None, sampler = {}, rules=[],
-                 eval_func = None, logfile = '', widening_coef = 0.3):
+                 eval_func = None, logfile = ''):
         env = Env(scenario, sampler, rules, logfile)
         Env.evaluate = eval_func
-        self.mcts = MCTS(env = env, widening_coef = widening_coef)
+        self.mcts = MCTS(env = env)
         Env.evaluate = eval_func
 
         # config logger

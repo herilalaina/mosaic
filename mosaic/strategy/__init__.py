@@ -2,7 +2,7 @@ class BaseStrategy():
     def __init__(self):
         pass
 
-    def selection(self, parent, vals, visits):
+    def selection(self, parent, ids, vals, visits):
         pass
 
     def expansion(self):
