@@ -3,7 +3,7 @@
 import logging
 import math
 
-from mosaic.strategy.uct import UCT
+from mosaic.strategy.policy import UCT
 from mosaic.node import Node
 
 
@@ -75,7 +75,7 @@ class MCTS():
         """Back propagate reward."""
         for parent in self.tree.get_path_to_node(node_id=node, name=False):
             vl, vs = self.tree.get_attribute(parent, "reward"), self.tree.get_attribute(parent, "visits")
-            new_val, new_vis = self.policy.backpropagate(vl, vs, reward)
+            new_val, new_vis = self.policy.backpropagate(parent, vl, vs, reward)
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
 

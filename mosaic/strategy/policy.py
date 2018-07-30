@@ -1,44 +1,37 @@
-"""Policy for bandit phase."""
-
-
-import random
 import math
-import networkx as nx
+import numpy as np
+from mosaic.strategy import BaseStrategy, BaseEarlyStopping
 
-class UCT():
-    """Implements the UCT algorithm."""
-    def __init__(self, use_rave = False):
-        self.use_rave = use_rave
+class UCT(BaseStrategy, BaseEarlyStopping):
+    def __init__(self):
+        super().__init__()
 
-    def BESTCHILD(self, node, childs, scalar):
-        """Return the best child."""
-        bestscore = 0.0
-        bestchildren = []
-        for c in childs:
-            score = self.uct(node, c, scalar)
-            if score == bestscore:
-                bestchildren.append(c["id"])
-            if score > bestscore:
-                bestchildren = [c["id"]]
-                bestscore = score
-        if len(bestchildren) == 0:
-            raise Exception("No best child found")
-        return random.choice(bestchildren)
+    def selection(self, parent, ids, vals, visits):
+        parent_val, parent_vis = parent
+        return ids[np.argmax([(val + math.sqrt(2 * math.log10(parent_vis) / vis)) for vis, val in zip(visits, vals)])]
 
-    def uct(self, node, c, scalar):
-        """Calculate value of node."""
+    def playout(self):
+        pass
 
-        if float(c["visits"]) == 0:
-            return 1000
+class Besa(UCT):
+    def __init__(self):
+        super().__init__()
+        self.scores = dict()
 
-        explore = math.sqrt(2.0 * math.log(node["visits"]) / float(c["visits"]))
-        if not self.use_rave:
-            score = c["reward"] + (scalar * explore)
-            return score
+
+    def selection(self, parent, ids, vals, visits):
+        nb_count=min([len(self.scores[c]) for c in ids])
+        if nb_count == 0:
+            raise Exception("Need to check")
         else:
-            k = 200
-            beta = math.sqrt(k / (3 * node["visits"] + k))
-            rave_score = c["rave_score"]
-            mc_score = c["reward"]
-            uct_coef = (scalar * explore)
-            return (1 - beta) * mc_score + beta * rave_score
+            new_val = []
+            for id in ids:
+                new_val.append(np.mean(np.random.choice(self.scores)))
+            return super(UCT, self).selection(parent, ids, new_val, [nb_count] * len(ids))
+
+    def backpropagate(self, id, value, visit, reward):
+        if id in self.scores:
+            self.scores[id].append(reward)
+        else:
+            self.scores.update(id, [reward])
+        return super(UCT, self).backpropagate(id, value, visit, reward)

@@ -8,7 +8,7 @@ class BaseStrategy():
     def expansion(self, sampler, arg):
         return sampler(*arg)
 
-    def backpropagate(self, value, visit, reward):
+    def backpropagate(self, id, value, visit, reward):
         new_val = value + (reward - value) / (visit + 1)
         return new_val, visit + 1
 
