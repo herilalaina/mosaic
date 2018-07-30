@@ -1,7 +1,6 @@
 import unittest
-import random
 
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.scenario import ListTask, ComplexScenario, ChoiceScenario
 class TestScenario(unittest.TestCase):
 
     def test_call(self):

@@ -4,9 +4,9 @@ import random
 
 from mosaic.env import Env
 from mosaic.mcts import MCTS
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
-from mosaic.space import Space, Parameter
-from mosaic.rules import ChildRule, ValueRule
+from mosaic.simulation.scenario import ListTask, ChoiceScenario
+from mosaic.space import Parameter
+from mosaic.simulation.rules import ChildRule, ValueRule
 
 
 class TestMCTS(unittest.TestCase):

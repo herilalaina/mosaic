@@ -1,8 +1,8 @@
 import unittest
 
-from mosaic.rules import ChildRule, ValueRule
+from mosaic.simulation.rules import ChildRule, ValueRule
 from mosaic.space import Space, Parameter
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.scenario import ListTask, ChoiceScenario
 
 class TestRules(unittest.TestCase):
 

@@ -15,7 +15,7 @@ class UCT(BaseStrategy, BaseEarlyStopping):
 
 class Besa(UCT):
     def __init__(self):
-        super().__init__()
+        super(UCT, self).__init__()
         self.scores = dict()
 
 
@@ -26,12 +26,12 @@ class Besa(UCT):
         else:
             new_val = []
             for id in ids:
-                new_val.append(np.mean(np.random.choice(self.scores)))
-            return super(UCT, self).selection(parent, ids, new_val, [nb_count] * len(ids))
+                new_val.append(np.mean(np.random.choice(np.concatenate(list(self.scores.values())), size=nb_count)))
+            return UCT.selection(self, parent, ids, new_val, [nb_count] * len(ids))
 
     def backpropagate(self, id, value, visit, reward):
         if id in self.scores:
             self.scores[id].append(reward)
         else:
-            self.scores.update(id, [reward])
-        return super(UCT, self).backpropagate(id, value, visit, reward)
+            self.scores[id] = [reward]
+        return UCT.backpropagate(self, id, value, visit, reward)

@@ -5,7 +5,7 @@ import time
 from pprint import pformat
 
 from mosaic.space import Space
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+
 
 class Env():
     """Base class for environement."""

@@ -5,8 +5,8 @@ from copy import deepcopy
 import random
 import time
 
-from mosaic.rules import ChildRule
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.rules import ChildRule
+from mosaic.simulation.scenario import ComplexScenario, ChoiceScenario
 from mosaic.utils import random_uniform_on_log_space
 
 class Space():

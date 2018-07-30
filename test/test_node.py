@@ -2,7 +2,7 @@ import unittest
 
 from mosaic.node import Node
 from mosaic.space import Space, Parameter
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.scenario import ListTask, ChoiceScenario
 
 class TestNode(unittest.TestCase):
 

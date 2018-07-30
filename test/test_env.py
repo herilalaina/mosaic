@@ -1,7 +1,7 @@
 import unittest
 
 from mosaic.env import Env
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.scenario import ListTask, ChoiceScenario
 from mosaic.space import Space, Parameter
 
 class TestEnv(unittest.TestCase):

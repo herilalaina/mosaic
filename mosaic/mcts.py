@@ -3,14 +3,14 @@
 import logging
 import math
 
-from mosaic.strategy.policy import UCT
+from mosaic.strategy.policy import UCT, Besa
 from mosaic.node import Node
 
 
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, policy=UCT()):
+    def __init__(self, env, policy=Besa()):
         self.env = env
 
         # Init tree

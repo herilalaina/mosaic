@@ -1,6 +1,6 @@
 import random
 
-from mosaic.rules import ChildRule
+from mosaic.simulation.rules import ChildRule
 
 class BaseScenario():
     def __init__(self, queue, name, rules):
