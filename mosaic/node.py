@@ -38,7 +38,7 @@ class Node():
         # Check if node is fully expanded.
         is_finite, nb_childs = space.has_finite_child(self.get_path_to_node(node_id))
         nb_current_childs = len(list(self.tree.successors(node_id)))
-        nb_child_allowed = min(nb_childs, math.ceil(math.sqrt(self.get_attribute(node_id, "visits"))))
+        nb_child_allowed = min(nb_childs, math.floor(math.sqrt(self.get_attribute(node_id, "visits"))))
         if nb_current_childs >= nb_child_allowed:
             return True
 

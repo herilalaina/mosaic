@@ -47,7 +47,7 @@ start = ComplexScenario(name = "root", scenarios=[preprocessing, model], is_orde
 # Sampling hyperparameter
 sampler = { "SVC__C": Parameter("SVC__C",[0, 2], "uniform", "float"),
             "SVC__kernel": Parameter("SVC__kernel", ["linear", "poly", "rbf", "sigmoid"], "choice", "string"),
-            "SVC__degree": Parameter("SVC__degree", [1, 2, 3], "choice", "int"),
+            "SVC__degree": Parameter("SVC__degree", [1, 2], "choice", "int"),
             "LogisticRegression__penalty": Parameter("LogisticRegression__penalty", ["l1", "l2"], "choice", "string"),
             "LogisticRegression__C": Parameter("LogisticRegression__C", [0, 2], "uniform", "float"),
             "PCA__n_components": Parameter("PCA__n_components", [2, 20], "uniform", 'int'),
@@ -88,7 +88,7 @@ def eval_func(config, bestconfig):
     return min(scores)
 
 mosaic = Search(scenario = start, sampler = sampler, rules = rules,
-                eval_func = eval_func, widening_coef = 0.5)
+                eval_func = eval_func)
 res = mosaic.run(nb_simulation = 500, generate_image_path = "images")
 
 print(res)

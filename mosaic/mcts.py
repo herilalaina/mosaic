@@ -32,7 +32,6 @@ class MCTS():
         reward = self.PLAYOUT(front)
         self.BACKUP(front, reward)
 
-        #self.logger.info("front={0}\t reward={1}".format(front, reward))
         self.n_iter += 1
 
     def TREEPOLICY(self):
@@ -58,8 +57,9 @@ class MCTS():
 
     def EXPAND(self, node):
         """Expand child node."""
-        name, value, terminal = self.env.space.next_params(self.tree.get_path_to_node(node),
-                                                            self.tree.get_childs(node, info = ["name", "value"]))
+        name, value, terminal = self.policy.expansion(self.env.space.next_params,
+                                                      [self.tree.get_path_to_node(node),
+                                                       self.tree.get_childs(node, info = ["name", "value"])])
         id = self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
         self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(id, name, value, terminal))
         return id
@@ -67,7 +67,7 @@ class MCTS():
     def PLAYOUT(self, node_id):
         """Playout policy."""
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
-        score = self.env._evaluate(playout_node)
+        score = self.policy.evaluate(self.env._evaluate, [playout_node])
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
         return score
 

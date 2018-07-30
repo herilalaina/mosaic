@@ -5,8 +5,8 @@ class BaseStrategy():
     def selection(self, parent, ids, vals, visits):
         pass
 
-    def expansion(self):
-        pass
+    def expansion(self, sampler, arg):
+        return sampler(*arg)
 
     def backpropagate(self, value, visit, reward):
         new_val = value + (reward - value) / (visit + 1)
@@ -14,3 +14,11 @@ class BaseStrategy():
 
     def playout(self):
         pass
+
+
+class BaseEarlyStopping():
+    def __init__(self):
+        pass
+
+    def evaluate(self, func, args):
+        return func(*args)
