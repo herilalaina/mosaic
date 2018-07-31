@@ -7,7 +7,7 @@ import math
 
 from scipy.optimize import basinhopping, differential_evolution
 from mosaic.mosaic import Search
-from mosaic.simulation.scenario import ListTask, ChoiceScenario
+from mosaic.simulation.scenario import WorkflowListTask, WorkflowChoiceScenario
 
 # Function to optimize
 def Michalewicz(coeffs):
@@ -17,14 +17,14 @@ def Michalewicz(coeffs):
     return r
 
 # Configure space of hyperparameter
-algo_1 = ListTask(is_ordered=True,
-                  name = "basinhopping",
-                  tasks = ["basinhopping__method", "basinhopping__stepsize"])
-algo_2 = ListTask(is_ordered=True,
-                  name = "differential_evolution",
-                  tasks = ["differential_evolution__strategy",
+algo_1 = WorkflowListTask(is_ordered=True,
+                          name = "basinhopping",
+                          tasks = ["basinhopping__method", "basinhopping__stepsize"])
+algo_2 = WorkflowListTask(is_ordered=True,
+                          name = "differential_evolution",
+                          tasks = ["differential_evolution__strategy",
                            "differential_evolution__popsize"])
-start = ChoiceScenario(name = "root", scenarios=[algo_1, algo_2])
+start = WorkflowChoiceScenario(name ="root", scenarios=[algo_1, algo_2])
 
 # Sampling hyperparameter
 list_method = ["BFGS", "Nelder-Mead", "Powell", "L-BFGS-B",

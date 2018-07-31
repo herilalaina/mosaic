@@ -1,8 +1,9 @@
 import unittest
 
-from mosaic.space import Space, Parameter
+from mosaic.space import Space
+from mosaic.simulation.parameter import Parameter
 from mosaic.simulation.rules import ChildRule
-from mosaic.simulation.scenario import ListTask, ChoiceScenario
+from mosaic.simulation.scenario import WorkflowListTask, WorkflowChoiceScenario
 
 class TestSpace(unittest.TestCase):
 
@@ -14,10 +15,10 @@ class TestSpace(unittest.TestCase):
         def b_func(): return 0
         def c_func(): return 0
 
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2", "x2__p3"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2"])
+        x2 = WorkflowListTask(is_ordered=True, name ="x2", tasks = ["x2__p1", "x2__p2", "x2__p3"])
 
-        start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="Model", scenarios=[x1, x2])
 
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
@@ -37,10 +38,10 @@ class TestSpace(unittest.TestCase):
             assert(space.next_params(history=[("Model", None)])[0] in ["x1", "x2"])
 
     def test_is_valid(self):
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2", "x2__p3"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2"])
+        x2 = WorkflowListTask(is_ordered=True, name ="x2", tasks = ["x2__p1", "x2__p2", "x2__p3"])
 
-        start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="Model", scenarios=[x1, x2])
 
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
@@ -62,10 +63,10 @@ class TestSpace(unittest.TestCase):
         def b_func(): return 0
         def c_func(): return 0
 
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2"])
+        x2 = WorkflowListTask(is_ordered=True, name ="x2", tasks = ["x2__p1", "x2__p2"])
 
-        start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="Model", scenarios=[x1, x2])
 
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
@@ -88,10 +89,10 @@ class TestSpace(unittest.TestCase):
         def b_func(): return 0
         def c_func(): return 0
 
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2"])
+        x2 = WorkflowListTask(is_ordered=True, name ="x2", tasks = ["x2__p1", "x2__p2"])
 
-        start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="Model", scenarios=[x1, x2])
 
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),
@@ -109,10 +110,10 @@ class TestSpace(unittest.TestCase):
         def b_func(): return 0
         def c_func(): return 0
 
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2"])
+        x2 = WorkflowListTask(is_ordered=True, name ="x2", tasks = ["x2__p1", "x2__p2"])
 
-        start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="Model", scenarios=[x1, x2])
 
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2, 3, 4, 5, 6, 7], "choice", "int"),

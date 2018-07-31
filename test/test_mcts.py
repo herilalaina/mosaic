@@ -4,8 +4,8 @@ import random
 
 from mosaic.env import Env
 from mosaic.mcts import MCTS
-from mosaic.simulation.scenario import ListTask, ChoiceScenario
-from mosaic.space import Parameter
+from mosaic.simulation.scenario import WorkflowListTask, WorkflowChoiceScenario
+from mosaic.simulation.parameter import Parameter
 from mosaic.simulation.rules import ChildRule, ValueRule
 
 
@@ -15,10 +15,10 @@ class TestMCTS(unittest.TestCase):
         def a_func(): return 0
         def b_func(): return 0
         def c_func(): return 0
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2"])
-        x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2__p1", "x2__p2"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2"])
+        x2 = WorkflowListTask(is_ordered=True, name ="x2", tasks = ["x2__p1", "x2__p2"])
 
-        start = ChoiceScenario(name = "root", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="root", scenarios=[x1, x2])
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2], "choice", "int"),
                     "x2__p1": Parameter("x2__p1", ["a", "b", "c"], "choice", "string"),
@@ -35,10 +35,10 @@ class TestMCTS(unittest.TestCase):
         def a_func(): return 0
         def b_func(): return 0
         def c_func(): return 0
-        x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1__p1", "x1__p2", "x1__p3"])
-        x2 = ListTask(is_ordered=False, name = "x2",  tasks = ["x2__p1", "x2__p2", "x2__p3"])
+        x1 = WorkflowListTask(is_ordered=False, name ="x1", tasks = ["x1__p1", "x1__p2", "x1__p3"])
+        x2 = WorkflowListTask(is_ordered=False, name ="x2", tasks = ["x2__p1", "x2__p2", "x2__p3"])
 
-        start = ChoiceScenario(name = "root", scenarios=[x1, x2])
+        start = WorkflowChoiceScenario(name ="root", scenarios=[x1, x2])
         sampler = { "x1__p1": Parameter("x1__p1", [0, 1], "uniform", "float"),
                     "x1__p2": Parameter("x1__p2", [1, 2], "choice", "int"),
                     "x1__p3": Parameter("x1__p3", ["v", "w", "x", "y", "z"], "choice", "string"),

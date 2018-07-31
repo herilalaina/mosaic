@@ -14,31 +14,31 @@ from sklearn import feature_selection
 from sklearn.pipeline import Pipeline
 
 from mosaic.mosaic import Search
-from mosaic.space import Parameter
-from mosaic.simulation.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.parameter import Parameter
+from mosaic.simulation.scenario import WorkflowListTask, WorkflowComplexScenario, WorkflowChoiceScenario
 
 
 # Configure space of hyperparameter
-pca = ListTask(is_ordered=False, name = "PCA",
-                              tasks = ["PCA__n_components"],
-                               rules = [])
-selectKBest = ListTask(is_ordered=False, name = "SelectKBest",
-                              tasks = [
+pca = WorkflowListTask(is_ordered=False, name ="PCA",
+                       tasks = ["PCA__n_components"],
+                       rules = [])
+selectKBest = WorkflowListTask(is_ordered=False, name ="SelectKBest",
+                               tasks = [
                                        # "SelectKBest__score_func",
                                        "SelectKBest__k"])
-preprocessing = ChoiceScenario(name = "preprocessing", scenarios = [pca, selectKBest])
+preprocessing = WorkflowChoiceScenario(name ="preprocessing", scenarios = [pca, selectKBest])
 
 
-algo_1 = ListTask(is_ordered=False,
-                  name = "SVC",
-                  tasks = ["SVC__kernel", "SVC__degree"])
-algo_2 = ListTask(is_ordered=True,
-                  name = "LogisticRegression",
-                  tasks = ["LogisticRegression__penalty",
+algo_1 = WorkflowListTask(is_ordered=False,
+                          name = "SVC",
+                          tasks = ["SVC__kernel", "SVC__degree"])
+algo_2 = WorkflowListTask(is_ordered=True,
+                          name = "LogisticRegression",
+                          tasks = ["LogisticRegression__penalty",
                            "LogisticRegression__C"])
-model = ChoiceScenario(name = "model", scenarios=[algo_1, algo_2])
+model = WorkflowChoiceScenario(name ="model", scenarios=[algo_1, algo_2])
 
-start = ComplexScenario(name = "root", scenarios=[preprocessing, model], is_ordered=True)
+start = WorkflowComplexScenario(name ="root", scenarios=[preprocessing, model], is_ordered=True)
 
 # Sampling hyperparameter
 sampler = { "SVC__C": Parameter("SVC__C",[0, 2], "uniform", "float"),

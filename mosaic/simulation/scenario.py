@@ -10,14 +10,6 @@ class BaseScenario():
 
         self.queue = [node for node in queue if not self.child_task(node)]
 
-    def add_to_current_queue(self, new_node):
-        if isinstance(self, ListTask):
-            self.queue.append(new_node)
-        elif isinstance(self, ChoiceScenario):
-            self.choosed_scenario.add_to_current_queue(new_node)
-        elif isinstance(self, ComplexScenario):
-            self.queue[0].append(new_node)
-
     def child_task(self, node):
         for rule in self.rules:
             if isinstance(rule, ChildRule) and node in rule.applied_to:
@@ -29,7 +21,6 @@ class BaseScenario():
             if isinstance(rule, ChildRule) and parent_value in rule.value and parent == rules.parent:
                 for n in rule.applied_to:
                     self.add_to_current_queue(n)
-
 
     def call(self):
         if self.finished():
@@ -55,9 +46,22 @@ class BaseScenario():
     def queue_tasks(self):
         return self.queue
 
-class ListTask(BaseScenario):
+class AbstractWorkflowScenario(BaseScenario):
+    def __init__(self, queue, name, rules):
+        super(AbstractWorkflowScenario, self).__init__(queue, name, rules)
+
+    def add_to_current_queue(self, new_node):
+        if isinstance(self, WorkflowListTask):
+            self.queue.append(new_node)
+        elif isinstance(self, WorkflowChoiceScenario):
+            self.choosed_scenario.add_to_current_queue(new_node)
+        elif isinstance(self, WorkflowComplexScenario):
+            self.queue[0].append(new_node)
+
+
+class WorkflowListTask(AbstractWorkflowScenario):
     def __init__(self, name=None, tasks = [], is_ordered = True, rules = []):
-        super().__init__(queue=tasks, name=name, rules = rules)
+        super(WorkflowListTask, self).__init__(queue=tasks, name=name, rules = rules)
         self.is_ordered = is_ordered
 
     def _call(self):
@@ -88,9 +92,9 @@ class ListTask(BaseScenario):
         else:
             return self.queue
 
-class ChoiceScenario(BaseScenario):
+class WorkflowChoiceScenario(AbstractWorkflowScenario):
     def __init__(self, name = None, scenarios = [], nb_choice = 1, rules = []):
-        super().__init__(queue=scenarios, name=name, rules = rules)
+        super(WorkflowChoiceScenario, self).__init__(queue=scenarios, name=name, rules = rules)
         self.nb_choice = nb_choice
         self.choosed = False
 
@@ -126,9 +130,9 @@ class ChoiceScenario(BaseScenario):
             return False
         return self.choosed_scenario.finished()
 
-class ComplexScenario(BaseScenario):
+class WorkflowComplexScenario(AbstractWorkflowScenario):
     def __init__(self, name = None, scenarios = [], is_ordered = True, rules = []):
-        super().__init__(queue = scenarios, name =  name, rules = rules)
+        super(WorkflowComplexScenario, self).__init__(queue = scenarios, name =  name, rules = rules)
         self.is_ordered = is_ordered
 
         if self.is_ordered == False:
@@ -174,15 +178,3 @@ class ComplexScenario(BaseScenario):
         else:
             return self.queue[0].queue_tasks()
 
-"""
-x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1_p1", "x1_p2", "x1_p4", "x1_p5", "x1_p6", "x1_p7"])
-x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2_p1", "x2_p2", "x2_p4", "x2_p5", "x2_p6", "x2_p7"])
-
-x1.queue_tasks()
-start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
-start.queue_tasks()
-start.call()
-
-for i in ["x1_p1", "x1_p2", "x1_p4", "x1_p5", "x1_p6", "x1_p7", "x2_p1", "x2_p2", "x2_p4", "x2_p5", "x2_p6", "x2_p7"]:
-    print(start.execute())
-"""

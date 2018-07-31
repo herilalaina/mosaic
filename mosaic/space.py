@@ -5,14 +5,13 @@ from copy import deepcopy
 import random
 import time
 
-from mosaic.simulation.rules import ChildRule
-from mosaic.simulation.scenario import ComplexScenario, ChoiceScenario
-from mosaic.utils import random_uniform_on_log_space
+from mosaic.simulation.scenario import WorkflowComplexScenario, WorkflowChoiceScenario
+
 
 class Space():
     def __init__(self, scenario = None, sampler = {}, rules = []):
-        if not isinstance(scenario, ComplexScenario) and not isinstance(scenario, ChoiceScenario):
-            self.scenario = ChoiceScenario(name = "root", scenarios = [scenario])
+        if not isinstance(scenario, WorkflowComplexScenario) and not isinstance(scenario, WorkflowChoiceScenario):
+            self.scenario = WorkflowChoiceScenario(name ="root", scenarios = [scenario])
         else:
             self.scenario = scenario
         self.sampler = sampler
@@ -33,16 +32,8 @@ class Space():
                 ok = True
         return param, val, self.get_nb_possible_child(history + [(param, val)]) == 0
 
-    def can_be_executed(self, param, history):
-        for rule in self.rules:
-            if isinstance(rule, ChildRule) and name in rule.applied_to:
-                for parent, value_parent in history:
-                    if parent == rule.parent and value_parent in rule.value:
-                        return True
-
     def has_finite_child(self, history=[]):
-        """Return True if number of child is finite
-        """
+        """Return True if number of child is finite"""
         nb_child = self.get_nb_possible_child(history)
 
         return (nb_child == float("inf")), nb_child
@@ -119,31 +110,3 @@ class Space():
             scenario.actualize_queue(config, value)
 
         return scenario
-
-
-class Parameter():
-    def __init__(self, name = None, value_list = [], type_sampling = None,
-                 type = None):
-        self.name = name
-        self.value_list = value_list
-        self.type_sampling = type_sampling
-        self.type = type
-
-        if type_sampling not in ["uniform", "choice", "constant", "log_uniform"]:
-            raise Exception("Can not handle {0} type".format(self.type))
-
-    def get_info(self):
-        return self.value_list, self.type_sampling
-
-    def sample_new_value(self):
-        if self.type_sampling == "choice":
-            return random.choice(self.value_list)
-        elif self.type_sampling == "uniform":
-            if self.type == 'int':
-                return random.randint(self.value_list[0], self.value_list[1])
-            else:
-                return random.uniform(self.value_list[0], self.value_list[1])
-        elif self.type_sampling == "constant":
-            return self.value_list
-        elif self.type_sampling == "log_uniform":
-            return random_uniform_on_log_space(self.value_list[0], self.value_list[1])
