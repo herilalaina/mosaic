@@ -4,13 +4,10 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
 import math
-import numpy as np
-import random
 
 from scipy.optimize import basinhopping, differential_evolution
 from mosaic.mosaic import Search
-from mosaic.space import Parameter
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.simulation.scenario import ListTask, ChoiceScenario
 
 # Function to optimize
 def Michalewicz(coeffs):

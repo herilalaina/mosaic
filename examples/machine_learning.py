@@ -3,10 +3,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-import math
-import numpy as np
-import random
-
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
@@ -18,8 +14,8 @@ from sklearn import feature_selection
 from sklearn.pipeline import Pipeline
 
 from mosaic.mosaic import Search
-from mosaic.space import ChildRule, Parameter
-from mosaic.scenario import ListTask, ComplexScenario, ChoiceScenario
+from mosaic.space import Parameter
+from mosaic.simulation.scenario import ListTask, ComplexScenario, ChoiceScenario
 
 
 # Configure space of hyperparameter

@@ -10,7 +10,7 @@ from mosaic.node import Node
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, policy=Besa()):
+    def __init__(self, env, policy=UCT()):
         self.env = env
 
         # Init tree
@@ -41,7 +41,7 @@ class MCTS():
             if len(self.tree.get_childs(node)) == 0:
                 return self.EXPAND(node)
             else:
-                if not self.tree.fully_expanded(node, self.env.space):
+                if not self.tree.fully_expanded(node, self.env):
                     return self.EXPAND(node)
                 else:
                     current_node = self.tree.get_info_node(node)
@@ -57,7 +57,7 @@ class MCTS():
 
     def EXPAND(self, node):
         """Expand child node."""
-        name, value, terminal = self.policy.expansion(self.env.space.next_params,
+        name, value, terminal = self.policy.expansion(self.env.next_moves,
                                                       [self.tree.get_path_to_node(node),
                                                        self.tree.get_childs(node, info = ["name", "value"])])
         id = self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)

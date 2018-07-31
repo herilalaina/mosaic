@@ -92,7 +92,6 @@ class Space():
 
         scenario = self.generate_playout_scenario(history = history)
 
-        # print(">>>>>>>>>>", history, scenario.queue_tasks())
         for child in scenario.queue_tasks():
             if child in self.sampler:
                 value_list, type_sampling = self.get_possible_value(child)
@@ -148,25 +147,3 @@ class Parameter():
             return self.value_list
         elif self.type_sampling == "log_uniform":
             return random_uniform_on_log_space(self.value_list[0], self.value_list[1])
-
-
-"""
-def a_func(): return 0
-def b_func(): return 0
-def c_func(): return 0
-
-x1 = ListTask(is_ordered=False, name = "x1", tasks = ["x1_p1", "x1_p2"])
-x2 = ListTask(is_ordered=True, name = "x2",  tasks = ["x2_p1", "x2_p2"])
-
-start = ChoiceScenario(name = "Model", scenarios=[x1, x2])
-
-sampler = { "x1_p1": ([0, 1], "uniform", "float"),
-            "x1_p2": ([[1, 2, 3, 4, 5, 6, 7]], "choice", "int"),
-            "x2_p1": ([["a", "b", "c", "d"]], "choice", "string"),
-            "x2_p2": ([[a_func, b_func, c_func]], "choice", "func"),
-}
-
-space = Space(scenario = start, sampler = sampler)
-
-space.playout(history=[("Model", None)])
-"""
