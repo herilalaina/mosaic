@@ -1,9 +1,42 @@
 import unittest
+import networkx as nx
 
-from mosaic.simulation.scenario import WorkflowListTask, WorkflowComplexScenario, WorkflowChoiceScenario
+from mosaic.simulation import scenario
+from mosaic.simulation.scenario import *
+
 class TestScenario(unittest.TestCase):
 
-    def test_call(self):
+    def test_constructor(self):
+        importance_scenario = scenario.ImportanceScenarioStatic(None)
+        assert(isinstance(importance_scenario, scenario.AbstractImportanceScenario))
+        assert (isinstance(importance_scenario, scenario.BaseScenario))
+
+        for class_scenario in [scenario.WorkflowListTask, scenario.WorkflowChoiceScenario, scenario.WorkflowComplexScenario]:
+            workflow_scenario = class_scenario()
+            assert (isinstance(workflow_scenario, scenario.AbstractWorkflowScenario))
+            assert (isinstance(workflow_scenario, scenario.BaseScenario))
+
+
+    def test_importance_static(self):
+        G = nx.DiGraph()
+        G.add_nodes_from(["algo", "algo__param1", "algo__param2", "algo__param3", "algo__param4"])
+        G.add_edges_from([("algo", "algo__param1"),
+                          ("algo__param1", "algo__param2"),
+                          ("algo__param2", "algo__param3"),
+                          ("algo__param3", "algo__param4")])
+
+        sc = scenario.ImportanceScenarioStatic(G)
+        assert(sc.call() == "algo")
+        assert (sc.call() == "algo__param1")
+        assert (sc.call() == "algo__param2")
+        assert (sc.call() == "algo__param3")
+        assert (sc.call() == "algo__param4")
+
+        sc = scenario.ImportanceScenarioStatic(G)
+        for task in ["algo", "algo__param1", "algo__param2", "algo__param3", "algo__param4"]:
+            assert (sc.execute(task) == task)
+
+    def test_workflow_call(self):
         arr1 = ["x1_p1", "x1_p2"]
         arr2 = ["x2_p1", "x2_p2"]
 
@@ -20,7 +53,7 @@ class TestScenario(unittest.TestCase):
         assert(start.call() == "x2_p1")
         assert(start.call() == "x2_p2")
 
-    def test_execute(self):
+    def test_workflow_execute(self):
         arr1 = ["x1_p1"]
         arr2 = ["x2_p1", "x2_p2"]
 
@@ -36,7 +69,7 @@ class TestScenario(unittest.TestCase):
         assert(start.execute("x2_p1") == "x2_p1")
         assert(start.execute("x2_p2") == "x2_p2")
 
-    def test_queue_task(self):
+    def test_workflow_queue_task(self):
         arr1 = ["x1_p1"]
         arr2 = ["x2_p1", "x2_p2"]
 
@@ -55,7 +88,7 @@ class TestScenario(unittest.TestCase):
         start.call()
         assert(start.queue_tasks() == ["x2_p1"])
 
-    def test_finished(self):
+    def test_workflow_finished(self):
         arr1 = ["x1_p1", "x1_p2"]
         arr2 = ["x2_p1", "x2_p2"]
         x1 = WorkflowListTask(name ="x1", is_ordered=False, tasks = arr1)
@@ -71,7 +104,7 @@ class TestScenario(unittest.TestCase):
         assert(x2.finished())
         assert(start.finished())
 
-    def test_choice_scenario(self):
+    def test_workflow_choice_scenario(self):
         arr1 = ["x1_p1", "x1_p2"]
         arr2 = ["x2_p1", "x2_p2"]
         x1 = WorkflowListTask(name ="x1", is_ordered=False, tasks = arr1)
@@ -84,7 +117,7 @@ class TestScenario(unittest.TestCase):
         assert(start.call() == "x2_p2")
         assert(start.finished())
 
-    def test_choice_complex_scenario(self):
+    def test_workflow_choice_complex_scenario(self):
         arr1 = ["x1_p1", "x1_p2"]
         arr2 = ["x2_p1", "x2_p2"]
         arr3 = ["x3_p1", "x3_p2"]

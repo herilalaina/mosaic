@@ -1,4 +1,5 @@
 import random
+import networkx as nx
 
 from mosaic.simulation.rules import ChildRule
 
@@ -31,21 +32,32 @@ class ImportanceScenarioStatic(AbstractImportanceScenario):
         super(ImportanceScenarioStatic, self).__init__(dependency_graph)
 
     def finished(self):
-        return len(self.dependency_graph.successors(self.executed_task[-1])) == 0
+        if not self.executed_task:
+            return False
+        return self.dependency_graph.successors(self.executed_task[-1]) is None
 
     def queue_tasks(self):
-        return self.dependency_graph.successors(self.executed_task[-1])
+        if not self.executed_task:
+            return list(nx.topological_sort(self.dependency_graph))[0]
+        else:
+            return self.dependency_graph.successors(self.executed_task[-1])
 
     def call(self):
         if self.finished():
             raise Exception("No task in queue.")
-        task = self.dependency_graph.successors(self.executed_task[-1])[0]
+        if len(self.executed_task) > 0:
+            task = next(self.dependency_graph.successors(self.executed_task[-1]))
+        else:
+            task = list(nx.topological_sort(self.dependency_graph))[0]
         self.executed_task.append(task)
         return task
 
     def execute(self, task):
-        list_tasks = self.dependency_graph.successors(self.executed_task[-1])
-        if task is not in list_tasks:
+        if not self.executed_task:
+            list_tasks = list(nx.topological_sort(self.dependency_graph))
+        else:
+            list_tasks = self.dependency_graph.successors(self.executed_task[-1])
+        if task not in list_tasks:
             raise Exception("No task in queue.")
         self.executed_task.append(task)
         return task
