@@ -5,12 +5,13 @@ from copy import deepcopy
 import random
 import time
 
-from mosaic.simulation.scenario import WorkflowComplexScenario, WorkflowChoiceScenario
+from mosaic.simulation.scenario import WorkflowComplexScenario, WorkflowChoiceScenario, AbstractImportanceScenario
 
 
 class Space():
     def __init__(self, scenario = None, sampler = {}, rules = []):
-        if not isinstance(scenario, WorkflowComplexScenario) and not isinstance(scenario, WorkflowChoiceScenario):
+        if not isinstance(scenario, WorkflowComplexScenario) and not isinstance(scenario, WorkflowChoiceScenario)\
+                and not isinstance(scenario, AbstractImportanceScenario):
             self.scenario = WorkflowChoiceScenario(name ="root", scenarios = [scenario])
         else:
             self.scenario = scenario

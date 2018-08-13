@@ -24,7 +24,14 @@ class AbstractImportanceScenario(BaseScenario):
     def __init__(self, dependency_graph):
         super(AbstractImportanceScenario, self).__init__()
         self.executed_task = []
-        self.dependency_graph = dependency_graph
+        self.dependency_graph = nx.DiGraph()
+        for source, target in dependency_graph.items():
+            if source not in self.dependency_graph:
+                self.dependency_graph.add_node(source)
+            for target in target:
+                if target not in self.dependency_graph:
+                    self.dependency_graph.add_node(target)
+                self.dependency_graph.add_edge(source, target)
 
 
 class ImportanceScenarioStatic(AbstractImportanceScenario):
@@ -46,7 +53,7 @@ class ImportanceScenarioStatic(AbstractImportanceScenario):
         if self.finished():
             raise Exception("No task in queue.")
         if len(self.executed_task) > 0:
-            task = next(self.dependency_graph.successors(self.executed_task[-1]))
+            task = random.choice(list(self.dependency_graph.successors(self.executed_task[-1])))
         else:
             task = list(nx.topological_sort(self.dependency_graph))[0]
         self.executed_task.append(task)
@@ -54,13 +61,17 @@ class ImportanceScenarioStatic(AbstractImportanceScenario):
 
     def execute(self, task):
         if not self.executed_task:
-            list_tasks = list(nx.topological_sort(self.dependency_graph))
+            if task != "root":
+                raise Exception("No task in queue.")
         else:
             list_tasks = self.dependency_graph.successors(self.executed_task[-1])
-        if task not in list_tasks:
-            raise Exception("No task in queue.")
+            if task not in list_tasks:
+                raise Exception("No task in queue.")
         self.executed_task.append(task)
         return task
+
+    def actualize_queue(self, config, value):
+        pass
 
 
 class AbstractWorkflowScenario(BaseScenario):

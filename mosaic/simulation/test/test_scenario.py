@@ -1,5 +1,4 @@
 import unittest
-import networkx as nx
 
 from mosaic.simulation import scenario
 from mosaic.simulation.scenario import *
