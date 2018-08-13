@@ -3,7 +3,57 @@ import random
 from mosaic.simulation.rules import ChildRule
 
 class BaseScenario():
+    def __init__(self):
+        pass
+
+    def finished(self):
+        raise NotImplemented()
+
+    def queue_tasks(self):
+        raise NotImplemented()
+
+    def call(self):
+        raise NotImplemented()
+
+    def execute(self, task):
+        raise NotImplemented()
+
+
+class AbstractImportanceScenario(BaseScenario):
+    def __init__(self, dependency_graph):
+        super(AbstractImportanceScenario, self).__init__()
+        self.executed_task = []
+        self.dependency_graph = dependency_graph
+
+
+class ImportanceScenarioStatic(AbstractImportanceScenario):
+    def __init__(self, dependency_graph):
+        super(ImportanceScenarioStatic, self).__init__(dependency_graph)
+
+    def finished(self):
+        return len(self.dependency_graph.successors(self.executed_task[-1])) == 0
+
+    def queue_tasks(self):
+        return self.dependency_graph.successors(self.executed_task[-1])
+
+    def call(self):
+        if self.finished():
+            raise Exception("No task in queue.")
+        task = self.dependency_graph.successors(self.executed_task[-1])[0]
+        self.executed_task.append(task)
+        return task
+
+    def execute(self, task):
+        list_tasks = self.dependency_graph.successors(self.executed_task[-1])
+        if task is not in list_tasks:
+            raise Exception("No task in queue.")
+        self.executed_task.append(task)
+        return task
+
+
+class AbstractWorkflowScenario(BaseScenario):
     def __init__(self, queue, name, rules):
+        super(AbstractWorkflowScenario, self).__init__()
         self.name = name
         self.executed_name_algo = True
         self.rules = rules
@@ -16,9 +66,23 @@ class BaseScenario():
                 return True
         return False
 
+    def finished(self):
+        return len(self.queue) == 0
+
+    def queue_tasks(self):
+        return self.queue
+
+    def add_to_current_queue(self, new_node):
+        if isinstance(self, WorkflowListTask):
+            self.queue.append(new_node)
+        elif isinstance(self, WorkflowChoiceScenario):
+            self.choosed_scenario.add_to_current_queue(new_node)
+        elif isinstance(self, WorkflowComplexScenario):
+            self.queue[0].append(new_node)
+
     def actualize_queue(self, parent, parent_value):
         for rule in self.rules:
-            if isinstance(rule, ChildRule) and parent_value in rule.value and parent == rules.parent:
+            if isinstance(rule, ChildRule) and parent_value in rule.value and parent == rule.parent:
                 for n in rule.applied_to:
                     self.add_to_current_queue(n)
 
@@ -39,24 +103,6 @@ class BaseScenario():
             self.executed_name_algo = False
             return self.name
         return self._execute(task)
-
-    def finished(self):
-        return len(self.queue) == 0
-
-    def queue_tasks(self):
-        return self.queue
-
-class AbstractWorkflowScenario(BaseScenario):
-    def __init__(self, queue, name, rules):
-        super(AbstractWorkflowScenario, self).__init__(queue, name, rules)
-
-    def add_to_current_queue(self, new_node):
-        if isinstance(self, WorkflowListTask):
-            self.queue.append(new_node)
-        elif isinstance(self, WorkflowChoiceScenario):
-            self.choosed_scenario.add_to_current_queue(new_node)
-        elif isinstance(self, WorkflowComplexScenario):
-            self.queue[0].append(new_node)
 
 
 class WorkflowListTask(AbstractWorkflowScenario):

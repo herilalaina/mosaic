@@ -6,6 +6,16 @@ class BaseRule():
     def test(self, list_nodes = []):
         raise NotImplemented()
 
+class DependanceRule(BaseRule):
+    def __init__(self, applied_to = [], parent = None):
+        super(DependanceRule, self).__init__(applied_to=applied_to)
+        self.parent = parent
+
+    def test(self):
+        raise NotImplemented()
+
+
+
 class ChildRule(BaseRule):
     def __init__(self, applied_to = [], parent = None, value = []):
         super().__init__(applied_to = applied_to)
