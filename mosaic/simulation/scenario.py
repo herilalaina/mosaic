@@ -21,8 +21,9 @@ class BaseScenario():
 
 
 class AbstractImportanceScenario(BaseScenario):
-    def __init__(self, dependency_graph):
+    def __init__(self, dependency_graph, rules):
         super(AbstractImportanceScenario, self).__init__()
+        self.rules = rules
         self.executed_task = []
         self.dependency_graph = nx.DiGraph()
         for source, target in dependency_graph.items():
@@ -35,8 +36,11 @@ class AbstractImportanceScenario(BaseScenario):
 
 
 class ImportanceScenarioStatic(AbstractImportanceScenario):
-    def __init__(self, dependency_graph):
-        super(ImportanceScenarioStatic, self).__init__(dependency_graph)
+    def __init__(self, dependency_graph, rules):
+        super(ImportanceScenarioStatic, self).__init__(dependency_graph, rules)
+        self.child_node = set()
+        for r in self.rules:
+            self.child_node.update(r.applied_to)
 
     def finished(self):
         if not self.executed_task:
@@ -49,7 +53,7 @@ class ImportanceScenarioStatic(AbstractImportanceScenario):
         else:
             return self.dependency_graph.successors(self.executed_task[-1])
 
-    def call(self):
+    def _call(self):
         if self.finished():
             raise Exception("No task in queue.")
         if len(self.executed_task) > 0:
@@ -59,19 +63,29 @@ class ImportanceScenarioStatic(AbstractImportanceScenario):
         self.executed_task.append(task)
         return task
 
+    def call(self):
+        task = self._call()
+        if task in self.child_node:
+            return self.call()
+        else:
+            return task
+
     def execute(self, task):
         if not self.executed_task:
             if task != "root":
                 raise Exception("No task in queue.")
-        else:
+        """else:
             list_tasks = self.dependency_graph.successors(self.executed_task[-1])
             if task not in list_tasks:
-                raise Exception("No task in queue.")
+                raise Exception("No task in queue.")"""
         self.executed_task.append(task)
         return task
 
-    def actualize_queue(self, config, value):
-        pass
+    def actualize_queue(self, parent, parent_value):
+        for rule in self.rules:
+            if isinstance(rule, ChildRule) and parent_value in rule.value and parent == rule.parent:
+                for n in rule.applied_to:
+                    self.child_node.remove(n)
 
 
 class AbstractWorkflowScenario(BaseScenario):
