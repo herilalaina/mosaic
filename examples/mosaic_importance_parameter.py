@@ -16,10 +16,10 @@ from sklearn.pipeline import Pipeline
 from mosaic.mosaic import Search
 from mosaic.simulation.parameter import Parameter
 from mosaic.simulation.scenario import ImportanceScenarioStatic
+from mosaic.simulation.rules import ChildRule
 
 
-# Configure space of hyperparameter
-
+# Configure space of hyper-parameter
 graph = {
     "root": ["PCA", "SelectKBest"],
     "PCA": ["PCA__n_components"],
@@ -30,21 +30,25 @@ graph = {
 
     # Algo
     "SVC": ["SVC__kernel"],
+    "SVC__kernel": ["SVC__degree"],
     "LogisticRegression": ["LogisticRegression__penalty"]
 }
 
-start = ImportanceScenarioStatic(graph)
+rules = [
+    ChildRule(applied_to=["SVC__degree"], parent="SVC__kernel", value=["poly"])
+]
+
+start = ImportanceScenarioStatic(graph, rules)
 
 # Sampling hyperparameter
 sampler = { "SVC__C": Parameter("SVC__C",[0, 2], "uniform", "float"),
-            "SVC__kernel": Parameter("SVC__kernel", ["linear", "rbf", "sigmoid"], "choice", "string"),
+            "SVC__kernel": Parameter("SVC__kernel", ["linear", "poly"], "choice", "string"),
+            "SVC__degree": Parameter("SVC__degree", [1, 2], "choice", "int"),
             "LogisticRegression__penalty": Parameter("LogisticRegression__penalty", ["l1", "l2"], "choice", "string"),
             "PCA__n_components": Parameter("PCA__n_components", [2, 20], "uniform", 'int'),
             "SelectKBest__score_func": Parameter("SelectKBest__score_func", [feature_selection.f_classif, feature_selection.mutual_info_classif, feature_selection.chi2], "choice", "func"),
             "SelectKBest__k": Parameter("SelectKBest__k", [1, 20], "uniform", "int")
 }
-
-rules = []
 
 # Evaluation of one configuration
 def eval_func(config, bestconfig):
