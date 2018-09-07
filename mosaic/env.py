@@ -22,6 +22,7 @@ class Env():
         self.history = {}
         self.start_time = time.time()
         self.logfile = logfile
+        self.preprocess = True
 
     def rollout(self, history = []):
         return self.space.playout(history)
@@ -51,7 +52,10 @@ class Env():
         return preprocessed_moves
 
     def _evaluate(self, list_moves = []):
-        config = self.preprocess_moves(list_moves)
+        if self.preprocess:
+            config = self.preprocess_moves(list_moves)
+        else:
+            config = list_moves
 
         hash_moves = hash(pformat(config))
         if hash_moves in self.history:
