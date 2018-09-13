@@ -5,7 +5,7 @@ using Monte Carlo Tree Search.
 This project is under heavy development.
 
 
-### Usage example: machine learning
+### Example of usage: machine learning
 A simple example of using `mosaic` to configure machine 
 learning pipeline made with PCA and SVM classifier.
 
