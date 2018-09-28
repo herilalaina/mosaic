@@ -9,10 +9,8 @@ import logging
 class Search:
     def __init__(self, scenario = None, sampler = {}, rules=[],
                  eval_func = None, logfile = ''):
-        env = Env(scenario, sampler, rules, logfile)
-        Env.evaluate = eval_func
+        env = Env(eval_func, scenario, sampler, rules, logfile)
         self.mcts = MCTS(env = env)
-        Env.evaluate = eval_func
 
         # config logger
         self.logger = logging.getLogger('mcts')

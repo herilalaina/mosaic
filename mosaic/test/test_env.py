@@ -27,7 +27,7 @@ class TestEnv(unittest.TestCase):
         space = Space(scenario = start, sampler = sampler)
         ex_config = space.playout(history=[("Model", None)])
 
-        env = Env(scenario = start, sampler = sampler)
+        env = Env(a_func, scenario = start, sampler = sampler)
 
         for i in range(10):
             configs = env.preprocess_moves(ex_config)

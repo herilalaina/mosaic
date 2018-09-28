@@ -25,7 +25,7 @@ class TestMCTS(unittest.TestCase):
                     "x2__p2": Parameter("x2__p2", [a_func, b_func, c_func], "choice", "int")
         }
 
-        env = Env(scenario = start, sampler = sampler)
+        env = Env(a_func, scenario = start, sampler = sampler)
         def evaluate(config, bestconfig):
             return random.uniform(0, 1)
         Env.evaluate = evaluate
@@ -51,10 +51,9 @@ class TestMCTS(unittest.TestCase):
             ValueRule(constraints = [("x1__p2", 1), ("x1__p3", "v")]),
             ValueRule(constraints = [("x1__p2", 2), ("x1__p3", "w")])
         ]
-        env = Env(scenario = start, sampler = sampler, rules = rules)
         def evaluate(config, bestconfig):
             return random.uniform(0, 1)
-        Env.evaluate = evaluate
+        env = Env(evaluate, scenario = start, sampler = sampler, rules = rules)
 
         mcts = MCTS(env = env)
         mcts.run(n = 100)

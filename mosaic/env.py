@@ -1,7 +1,7 @@
 """Base environement class."""
 
 import time
-
+import pynisher
 from pprint import pformat
 
 from mosaic.space import Space
@@ -16,13 +16,20 @@ class Env():
         "model": None
     }
 
-    def __init__(self, scenario = None, sampler = {}, rules = [], logfile = ""):
+    def __init__(self, eval_func, scenario = None, sampler = {}, rules = [],
+                 logfile = "", mem_in_mb=4048, cpu_time_in_s=300, num_processes=1):
         """Constructor."""
         self.space = Space(scenario = scenario, sampler = sampler, rules = rules)
         self.history = {}
         self.start_time = time.time()
         self.logfile = logfile
         self.preprocess = True
+
+        # Constrained evaluation
+        self.eval_func = pynisher.enforce_limits(mem_in_mb=mem_in_mb,
+                                                 cpu_time_in_s=cpu_time_in_s,
+                                                 num_processes=num_processes,
+                                                 logger=None)(eval_func)
 
     def rollout(self, history = []):
         return self.space.playout(history)
@@ -61,7 +68,7 @@ class Env():
         if hash_moves in self.history:
             return self.history[hash_moves]
 
-        res = Env.evaluate(config, self.bestconfig)
+        res = self.eval_func(config, self.bestconfig)
 
         if res > self.bestconfig["score"]:
             self.bestconfig = {
@@ -78,8 +85,3 @@ class Env():
         if self.logfile != "":
             with open(self.logfile, "a+") as f:
                 f.write("{0},{1}\n".format(time.time() - self.start_time, self.bestconfig["score"]))
-
-    @staticmethod
-    def evaluate(config, bestconfig):
-        """Method for moves evaluation."""
-        return 0
