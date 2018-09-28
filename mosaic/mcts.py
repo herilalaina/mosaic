@@ -10,7 +10,7 @@ from mosaic.node import Node
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, policy=UCT()):
+    def __init__(self, env, policy="uct"):
         self.env = env
 
         # Init tree
@@ -20,7 +20,12 @@ class MCTS():
         self.logger = logging.getLogger('mcts')
 
         # Policy
-        self.policy = policy
+        if policy == "uct":
+            self.policy = UCT()
+        elif policy == "besa":
+            self.policy = Besa()
+        else:
+            raise NotImplemented("Policy {0} not implemented".format(policy))
 
         # iteration logging
         self.n_iter = 0
