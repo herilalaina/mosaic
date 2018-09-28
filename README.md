@@ -2,7 +2,7 @@
 Mosaic is a Python library for general algorithm configuration 
 using Monte Carlo Tree Search.
 
-This project is under heavy development.
+<span style="color:red">This project is under heavy development</span>.
 
 
 ### Example of usage: machine learning

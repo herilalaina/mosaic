@@ -21,12 +21,12 @@ class BaseScenario():
 
 
 class AbstractImportanceScenario(BaseScenario):
-    def __init__(self, dependency_graph, rules):
+    def __init__(self, _dependency_graph, rules):
         super(AbstractImportanceScenario, self).__init__()
         self.rules = rules
         self.executed_task = []
         self.dependency_graph = nx.DiGraph()
-        for source, target in dependency_graph.items():
+        for source, target in _dependency_graph.items():
             if source not in self.dependency_graph:
                 self.dependency_graph.add_node(source)
             for target in target:

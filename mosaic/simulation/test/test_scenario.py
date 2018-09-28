@@ -6,7 +6,7 @@ from mosaic.simulation.scenario import *
 class TestScenario(unittest.TestCase):
 
     def test_constructor(self):
-        importance_scenario = scenario.ImportanceScenarioStatic(None)
+        importance_scenario = scenario.ImportanceScenarioStatic({}, [])
         assert(isinstance(importance_scenario, scenario.AbstractImportanceScenario))
         assert (isinstance(importance_scenario, scenario.BaseScenario))
 
@@ -17,22 +17,24 @@ class TestScenario(unittest.TestCase):
 
 
     def test_importance_static(self):
-        G = nx.DiGraph()
-        G.add_nodes_from(["algo", "algo__param1", "algo__param2", "algo__param3", "algo__param4"])
-        G.add_edges_from([("algo", "algo__param1"),
-                          ("algo__param1", "algo__param2"),
-                          ("algo__param2", "algo__param3"),
-                          ("algo__param3", "algo__param4")])
+        graph = {
+            "root": ["algo"],
+            "algo": ["algo__param1"],
+            "algo__param1": ["algo__param2"],
+            "algo__param2": ["algo__param3"],
+            "algo__param3": ["algo__param4"]
+        }
 
-        sc = scenario.ImportanceScenarioStatic(G)
+        sc = scenario.ImportanceScenarioStatic(graph, [])
+        assert (sc.call() == "root")
         assert(sc.call() == "algo")
         assert (sc.call() == "algo__param1")
         assert (sc.call() == "algo__param2")
         assert (sc.call() == "algo__param3")
         assert (sc.call() == "algo__param4")
 
-        sc = scenario.ImportanceScenarioStatic(G)
-        for task in ["algo", "algo__param1", "algo__param2", "algo__param3", "algo__param4"]:
+        sc = scenario.ImportanceScenarioStatic(graph, [])
+        for task in ["root", "algo", "algo__param1", "algo__param2", "algo__param3", "algo__param4"]:
             assert (sc.execute(task) == task)
 
     def test_workflow_call(self):
