@@ -6,7 +6,7 @@ class UCT(BaseStrategy, BaseEarlyStopping):
     def __init__(self):
         super().__init__()
 
-    def selection(self, parent, ids, vals, visits):
+    def selection(self, parent, ids, vals, visits, v_hat=None):
         parent_val, parent_vis = parent
         return ids[np.argmax([(val + math.sqrt(2 * math.log10(parent_vis) / vis)) for vis, val in zip(visits, vals)])]
 
@@ -19,7 +19,7 @@ class Besa(UCT):
         self.scores = dict()
 
 
-    def selection(self, parent, ids, vals, visits):
+    def selection(self, parent, ids, vals, visits, v_hat=None):
         nb_count=min([len(self.scores[c]) for c in ids])
         if nb_count == 0:
             raise Exception("Need to check")
