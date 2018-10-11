@@ -1,8 +1,12 @@
-import matplotlib.pyplot as plt
 import math
 import networkx as nx
 from networkx.drawing.nx_agraph import write_dot
-from networkx.drawing.nx_agraph import graphviz_layout
+
+try:
+    from networkx.drawing.nx_agraph import graphviz_layout
+    import matplotlib.pyplot as plt
+except:
+    print("Can not import graphviz_layout and matplotlib")
 
 
 class Node():
@@ -36,7 +40,7 @@ class Node():
 
     def fully_expanded(self, node_id, env):
         # Check if node is fully expanded.
-        is_finite, nb_childs = env.space.has_finite_child(self.get_path_to_node(node_id))
+        is_finite, nb_childs = env.has_finite_child(self.get_path_to_node(node_id))
         nb_current_childs = len(list(self.tree.successors(node_id)))
         nb_child_allowed = min(nb_childs, math.floor(math.sqrt(self.get_attribute(node_id, "visits"))))
         if nb_current_childs >= nb_child_allowed:

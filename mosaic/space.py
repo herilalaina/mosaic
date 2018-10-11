@@ -7,6 +7,12 @@ import time
 
 from mosaic.simulation.scenario import WorkflowComplexScenario, WorkflowChoiceScenario, AbstractImportanceScenario
 
+class CS_space():
+    def __init__(self, config_space):
+        self.config_space = config_space
+
+
+
 
 class Space():
     def __init__(self, scenario = None, sampler = {}, rules = []):

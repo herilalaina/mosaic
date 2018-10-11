@@ -1,15 +1,14 @@
 #TODO: Add comment
 
 
-from mosaic.env import Env
+from mosaic.env import ConfigSpace_env
 from mosaic.mcts import MCTS
 import logging
 
 
 class Search:
-    def __init__(self, scenario = None, sampler = {}, rules=[],
-                 eval_func = None, logfile = ''):
-        env = Env(eval_func, scenario, sampler, rules, logfile)
+    def __init__(self, eval_func, config_space, logfile = ''):
+        env = ConfigSpace_env(eval_func, config_space=config_space)
         self.mcts = MCTS(env = env)
 
         # config logger

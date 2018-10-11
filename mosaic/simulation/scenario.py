@@ -260,4 +260,3 @@ class WorkflowComplexScenario(AbstractWorkflowScenario):
                 return [s.name for s in self.queue]
         else:
             return self.queue[0].queue_tasks()
-
