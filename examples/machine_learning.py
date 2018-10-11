@@ -3,88 +3,82 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from sklearn.datasets import load_digits
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
+import numpy as np
+from sklearn import svm, datasets
 from sklearn.model_selection import cross_val_score
 
-from sklearn.feature_selection import SelectKBest
-from sklearn.decomposition import PCA
-from sklearn import feature_selection
-from sklearn.pipeline import Pipeline
+# Import ConfigSpace and different types of parameters
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace.hyperparameters import CategoricalHyperparameter, \
+    UniformFloatHyperparameter, UniformIntegerHyperparameter
+from ConfigSpace.conditions import InCondition
+
 
 from mosaic.mosaic import Search
-from mosaic.simulation.parameter import Parameter
-from mosaic.simulation.scenario import WorkflowListTask, WorkflowComplexScenario, WorkflowChoiceScenario
 
 
-# Configure space of hyperparameter
-pca = WorkflowListTask(is_ordered=False, name ="PCA",
-                       tasks = ["PCA__n_components"],
-                       rules = [])
-selectKBest = WorkflowListTask(is_ordered=False, name ="SelectKBest",
-                               tasks = [
-                                       # "SelectKBest__score_func",
-                                       "SelectKBest__k"])
-preprocessing = WorkflowChoiceScenario(name ="preprocessing", scenarios = [pca, selectKBest])
+# Build Configuration Space which defines all parameters and their ranges
+cs = ConfigurationSpace()
+# We define a few possible types of SVM-kernels and add them as "kernel" to our cs
+kernel = CategoricalHyperparameter("kernel", ["linear", "rbf", "poly", "sigmoid"], default_value="poly")
+cs.add_hyperparameter(kernel)
+# There are some hyperparameters shared by all kernels
+C = UniformFloatHyperparameter("C", 0.001, 1000.0, default_value=1.0)
+shrinking = CategoricalHyperparameter("shrinking", ["true", "false"], default_value="true")
+cs.add_hyperparameters([C, shrinking])
+# Others are kernel-specific, so we can add conditions to limit the searchspace
+degree = UniformIntegerHyperparameter("degree", 1, 5, default_value=3)     # Only used by kernel poly
+coef0 = UniformFloatHyperparameter("coef0", 0.0, 10.0, default_value=0.0)  # poly, sigmoid
+cs.add_hyperparameters([degree, coef0])
+use_degree = InCondition(child=degree, parent=kernel, values=["poly"])
+use_coef0 = InCondition(child=coef0, parent=kernel, values=["poly", "sigmoid"])
+cs.add_conditions([use_degree, use_coef0])
+# This also works for parameters that are a mix of categorical and values from a range of numbers
+# For example, gamma can be either "auto" or a fixed float
+gamma = CategoricalHyperparameter("gamma", ["auto", "value"], default_value="auto")  # only rbf, poly, sigmoid
+gamma_value = UniformFloatHyperparameter("gamma_value", 0.0001, 8, default_value=1)
+cs.add_hyperparameters([gamma, gamma_value])
+# We only activate gamma_value if gamma is set to "value"
+cs.add_condition(InCondition(child=gamma_value, parent=gamma, values=["value"]))
+# And again we can restrict the use of gamma in general to the choice of the kernel
+cs.add_condition(InCondition(child=gamma, parent=kernel, values=["rbf", "poly", "sigmoid"]))
 
 
-algo_1 = WorkflowListTask(is_ordered=False,
-                          name = "SVC",
-                          tasks = ["SVC__kernel", "SVC__degree"])
-algo_2 = WorkflowListTask(is_ordered=True,
-                          name = "LogisticRegression",
-                          tasks = ["LogisticRegression__penalty",
-                           "LogisticRegression__C"])
-model = WorkflowChoiceScenario(name ="model", scenarios=[algo_1, algo_2])
+iris = datasets.load_iris()
 
-start = WorkflowComplexScenario(name ="root", scenarios=[preprocessing, model], is_ordered=True)
 
-# Sampling hyperparameter
-sampler = { "SVC__C": Parameter("SVC__C",[0, 2], "uniform", "float"),
-            "SVC__kernel": Parameter("SVC__kernel", ["linear", "poly", "rbf", "sigmoid"], "choice", "string"),
-            "SVC__degree": Parameter("SVC__degree", [1, 2], "choice", "int"),
-            "LogisticRegression__penalty": Parameter("LogisticRegression__penalty", ["l1", "l2"], "choice", "string"),
-            "LogisticRegression__C": Parameter("LogisticRegression__C", [0, 2], "uniform", "float"),
-            "PCA__n_components": Parameter("PCA__n_components", [2, 20], "uniform", 'int'),
-            "SelectKBest__score_func": Parameter("SelectKBest__score_func", [feature_selection.f_classif, feature_selection.mutual_info_classif, feature_selection.chi2], "choice", "func"),
-            "SelectKBest__k": Parameter("SelectKBest__k", [1, 20], "uniform", "int")
-}
+def svm_from_cfg(cfg, best_config):
+    """ Creates a SVM based on a configuration and evaluates it on the
+    iris-dataset using cross-validation.
 
-rules = []
+    Parameters:
+    -----------
+    cfg: Configuration (ConfigSpace.ConfigurationSpace.Configuration)
+        Configuration containing the parameters.
+        Configurations are indexable!
 
-# Evaluation of one configuration
-def eval_func(config, bestconfig):
-    digits = load_digits()
-    X, target = digits.data, digits.target
+    Returns:
+    --------
+    A crossvalidated mean score for the svm on the loaded data-set.
+    """
+    # For deactivated parameters, the configuration stores None-values.
+    # This is not accepted by the SVM, so we remove them.
+    cfg = {k : cfg[k] for k in cfg if cfg[k]}
+    # We translate boolean values:
+    cfg["shrinking"] = True if cfg["shrinking"] == "true" else False
+    # And for gamma, we set it to a fixed value or to "auto" (if used)
+    if "gamma" in cfg:
+        cfg["gamma"] = cfg["gamma_value"] if cfg["gamma"] == "value" else "auto"
+        cfg.pop("gamma_value", None)  # Remove "gamma_value"
 
-    preprocessing = None
-    classifier = None
+    clf = svm.SVC(**cfg, random_state=42)
 
-    list_available_preprocessing = {
-        "PCA": PCA,
-        "SelectKBest": SelectKBest,
-        "SVC": SVC,
-        "LogisticRegression": LogisticRegression
-    }
+    scores = cross_val_score(clf, iris.data, iris.target, cv=5)
+    print("Config {0} score {1}".format(cfg, 1-np.mean(scores)))
+    return 1-np.mean(scores)  # Minimize!
 
-    for name, params in config:
-        if name in ["PCA", "SelectKBest"]:
-            preprocessing = list_available_preprocessing[name](**params)
-        elif  name in ["SVC", "LogisticRegression"]:
-            classifier = list_available_preprocessing[name](**params)
 
-    if preprocessing is None or classifier is None:
-        raise Exception("Classifier and/or Preprocessing not found\n {0}".format(config))
-
-    pipeline = Pipeline(steps=[("preprocessing", preprocessing), ("classifier", classifier)])
-    print(pipeline) # Print algo
-
-    scores = cross_val_score(pipeline, X, target, cv = 3)
-    return min(scores)
-
-mosaic = Search(scenario = start, sampler = sampler, rules = rules,
-                eval_func = eval_func)
+mosaic = Search(eval_func=svm_from_cfg, config_space=cs)
 res = mosaic.run(nb_simulation = 500, generate_image_path = "images")
 
 print(res)

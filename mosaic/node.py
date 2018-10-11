@@ -35,14 +35,17 @@ class Node():
     def get_path_to_node(self, node_id, name = True):
         path = nx.shortest_path(self.tree, source=0, target=node_id)
         if name:
-            return [(self.tree.nodes[v]["name"], self.tree.nodes[v]["value"]) for v in path]
+            return [(self.tree.nodes[v]["name"], self.tree.nodes[v]["value"]) for v in path][1:]
         return path
 
     def fully_expanded(self, node_id, env):
         # Check if node is fully expanded.
-        is_finite, nb_childs = env.has_finite_child(self.get_path_to_node(node_id))
+        has_next_parameter = env.has_finite_child(self.get_path_to_node(node_id))
+        if not has_next_parameter:
+            return True
+
         nb_current_childs = len(list(self.tree.successors(node_id)))
-        nb_child_allowed = min(nb_childs, math.floor(math.sqrt(self.get_attribute(node_id, "visits"))))
+        nb_child_allowed = math.floor(math.sqrt(self.get_attribute(node_id, "visits")))
         if nb_current_childs >= nb_child_allowed:
             return True
 

@@ -2,7 +2,6 @@
 
 import time
 import pynisher
-from pprint import pformat
 import random
 
 from mosaic.space import Space
@@ -23,7 +22,7 @@ class ConfigSpace_env():
         self.start_time = time.time()
         self.logfile = logfile
         self.config_space = config_space
-        self.preprocess = True
+        self.preprocess = False
 
         # Constrained evaluation
         self.eval_func = pynisher.enforce_limits(mem_in_mb=mem_in_mb,
@@ -33,13 +32,18 @@ class ConfigSpace_env():
 
     def rollout(self, history = []):
         config = self.config_space.sample_partial_configuration(history)
-        return [(param, config[param]) for param in config.keys()]
+        return config
 
     def next_moves(self, history = [], info_childs = []):
         config = self.config_space.sample_partial_configuration(history)
+        #print(config)
         moves_executed = set([el[0] for el in history])
         possible_moves = set(config.keys())
-        return random.sample(possible_moves - moves_executed, 1)
+        #print("Next move: {0}".format(random.sample(possible_moves - moves_executed, 1)))
+        next_param = random.sample(possible_moves - moves_executed, 1)[0]
+        value_param = config[next_param]
+        history.append((next_param, value_param))
+        return next_param, value_param, not self.has_finite_child(history)
 
 
     def _preprocess_moves_util(self, list_moves, index):
@@ -63,13 +67,13 @@ class ConfigSpace_env():
             preprocessed_moves.append((model, params))
         return preprocessed_moves
 
-    def _evaluate(self, list_moves=[]):
+    def _evaluate(self, list_moves):
         if self.preprocess:
             config = self._preprocess_moves(list_moves)
         else:
             config = list_moves
 
-        hash_moves = hash(pformat(config))
+        hash_moves = hash(str(config))
         if hash_moves in self.history:
             return self.history[hash_moves]
 
@@ -87,21 +91,13 @@ class ConfigSpace_env():
         return res
 
     def has_finite_child(self, history=[]):
-        return self.space.has_finite_child(history)
+        rollout = self.rollout(history)
+        return (len(set([el[0] for el in rollout]) - set([el[0] for el in history])) == 0)
 
     def log_result(self):
         if self.logfile != "":
             with open(self.logfile, "a+") as f:
                 f.write("{0},{1}\n".format(time.time() - self.start_time, self.bestconfig["score"]))
-
-
-
-
-
-
-
-
-
 
 
 class Env():
