@@ -17,7 +17,7 @@ class Search:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
-        self.logger.setLevel(logging.DEBUG)
+        #self.logger.setLevel(logging.DEBUG)
 
     def run(self, nb_simulation = 1, generate_image_path = ""):
         self.mcts.run(nb_simulation, generate_image_path)

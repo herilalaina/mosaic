@@ -93,7 +93,9 @@ class ConfigSpace_env():
 
     def has_finite_child(self, history=[]):
         rollout = self.rollout(history)
-        return set([el[0] for el in rollout]) > set([el[0] for el in history])
+        #print(set([el[0] for el in rollout]))
+        #print(set([el[0] for el in history]))
+        return len(set([el[0] for el in rollout])) != len(set([el[0] for el in history]))
 
     def log_result(self):
         if self.logfile != "":
