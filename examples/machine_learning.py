@@ -74,11 +74,11 @@ def svm_from_cfg(cfg, best_config):
     clf = svm.SVC(**cfg, random_state=42)
 
     scores = cross_val_score(clf, iris.data, iris.target, cv=5)
-    print("Config {0} score {1}".format(cfg, 1-np.mean(scores)))
-    return 1-np.mean(scores)  # Minimize!
+    #print("Config {0} score {1}".format(cfg, 1-np.mean(scores)))
+    return np.mean(scores)  # Minimize!
 
 
 mosaic = Search(eval_func=svm_from_cfg, config_space=cs)
-res = mosaic.run(nb_simulation = 500, generate_image_path = "images")
+res = mosaic.run(nb_simulation = 5000, generate_image_path = "images")
 
 print(res)

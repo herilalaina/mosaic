@@ -35,7 +35,7 @@ class MCTS():
 
     def MCT_SEARCH(self):
         """Monte carlo tree search iteration."""
-        #self.logger.info("#########################Iteration={0}##################################".format(self.n_iter))
+        self.logger.info("#########################Iteration={0}##################################".format(self.n_iter))
         front = self.TREEPOLICY()
         reward = self.PLAYOUT(front)
         self.BACKUP(front, reward)
@@ -46,6 +46,7 @@ class MCTS():
         """Selection using policy."""
         node = 0 # Root of the tree
         while not self.tree.is_terminal(node):
+            #print(self.tree.is_terminal(node))
             if len(self.tree.get_childs(node)) == 0:
                 return self.EXPAND(node)
             else:
@@ -60,7 +61,7 @@ class MCTS():
                                                  [x[0] for x in children],
                                                  [x[1] for x in children],
                                                  [x[2] for x in children])
-                    #self.logger.info("Selection\t node={0}".format(node))
+                    self.logger.info("Selection\t node={0}".format(node))
         return node
 
     def EXPAND(self, node):
@@ -69,14 +70,14 @@ class MCTS():
                                                       [self.tree.get_path_to_node(node),
                                                        self.tree.get_childs(node, info = ["name", "value"])])
         id = self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
-        #self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(id, name, value, terminal))
+        self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(id, name, value, terminal))
         return id
 
     def PLAYOUT(self, node_id):
         """Playout policy."""
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
-        #self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
+        self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
         return score
 
     def BACKUP(self, node, reward):
@@ -92,5 +93,5 @@ class MCTS():
             self.MCT_SEARCH()
             if generate_image_path != "":
                 self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
-            print(" ", end = "")
+            #print("", end = "")
         print("")

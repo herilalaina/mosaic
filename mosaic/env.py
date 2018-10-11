@@ -40,14 +40,14 @@ class ConfigSpace_env():
     def next_moves(self, history = [], info_childs = []):
         try:
             config = self.config_space.sample_partial_configuration(history)
+            moves_executed = set([el[0] for el in history])
+            possible_moves = set(config.keys())
+            next_param = random.sample(possible_moves - moves_executed, 1)[0]
+            value_param = config[next_param]
+            history.append((next_param, value_param))
         except Exception as e:
             print("Exception for {0}".format(history))
             raise(e)
-        moves_executed = set([el[0] for el in history])
-        possible_moves = set(config.keys())
-        next_param = random.sample(possible_moves - moves_executed, 1)[0]
-        value_param = config[next_param]
-        history.append((next_param, value_param))
         return next_param, value_param, not self.has_finite_child(history)
 
 
@@ -93,7 +93,7 @@ class ConfigSpace_env():
 
     def has_finite_child(self, history=[]):
         rollout = self.rollout(history)
-        return (len(set([el[0] for el in rollout]) - set([el[0] for el in history])) == 0)
+        return set([el[0] for el in rollout]) > set([el[0] for el in history])
 
     def log_result(self):
         if self.logfile != "":
