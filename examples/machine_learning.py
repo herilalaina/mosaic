@@ -42,6 +42,7 @@ cs.add_hyperparameters([gamma, gamma_value])
 cs.add_condition(InCondition(child=gamma_value, parent=gamma, values=["value"]))
 # And again we can restrict the use of gamma in general to the choice of the kernel
 cs.add_condition(InCondition(child=gamma, parent=kernel, values=["rbf", "poly", "sigmoid"]))
+cs.add_condition(InCondition(child=degree, parent=kernel, values=["poly"]))
 
 
 iris = datasets.load_iris()

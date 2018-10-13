@@ -10,7 +10,7 @@ from mosaic.node import Node
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, policy="uct", knowledge=None):
+    def __init__(self, env, policy="besa", knowledge=None):
         self.env = env
 
         # Init tree
@@ -46,9 +46,13 @@ class MCTS():
         """Selection using policy."""
         node = 0 # Root of the tree
         while not self.tree.is_terminal(node):
-            #print(self.tree.is_terminal(node))
             if len(self.tree.get_childs(node)) == 0:
-                return self.EXPAND(node)
+                #return self.EXPAND(node)
+                try:
+                    return self.EXPAND(node)
+                except:
+                    self.tree.set_attribute(node, "terminal", True)
+                    return node
             else:
                 if not self.tree.fully_expanded(node, self.env):
                     return self.EXPAND(node)
@@ -93,5 +97,4 @@ class MCTS():
             self.MCT_SEARCH()
             if generate_image_path != "":
                 self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
-            #print("", end = "")
         print("")

@@ -2,9 +2,9 @@
 
 import time
 import pynisher
-import random
+import numpy as np
 
-from mosaic.space import Space
+from mosaic.model_score import ScoreModel
 
 
 class ConfigSpace_env():
@@ -16,13 +16,16 @@ class ConfigSpace_env():
         "model": None
     }
 
-    def __init__(self, eval_func, config_space, logfile = "", mem_in_mb=4048, cpu_time_in_s=300, num_processes=4):
+    def __init__(self, eval_func, config_space, logfile = "", mem_in_mb=4048, cpu_time_in_s=5):
         """Constructor."""
         self.history = {}
         self.start_time = time.time()
         self.logfile = logfile
         self.config_space = config_space
+        self.nb_parameters = len(self.config_space._hyperparameters)
         self.preprocess = False
+
+        self.score_model = ScoreModel(self.nb_parameters)
 
         # Constrained evaluation
         self.eval_func = pynisher.enforce_limits(mem_in_mb=mem_in_mb,
@@ -30,25 +33,25 @@ class ConfigSpace_env():
                                                  logger=None)(eval_func)
 
     def rollout(self, history = []):
-        try:
-            config = self.config_space.sample_partial_configuration(history)
-            return config
-        except Exception as e:
-            print("Exception for {0}".format(history))
-            raise(e)
+        config = self.config_space.sample_partial_configuration(history)
+        return config
 
     def next_moves(self, history = [], info_childs = []):
         try:
             config = self.config_space.sample_partial_configuration(history)
             moves_executed = set([el[0] for el in history])
-            possible_moves = set(config.keys())
-            next_param = random.sample(possible_moves - moves_executed, 1)[0]
+            full_config = set(config.keys())
+            possible_params = list(full_config - moves_executed)
+            id_param = self.score_model.most_importance_parameter(
+                [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
+            next_param = possible_params[id_param]
             value_param = config[next_param]
             history.append((next_param, value_param))
         except Exception as e:
             print("Exception for {0}".format(history))
             raise(e)
-        return next_param, value_param, not self.has_finite_child(history)
+        is_terminal = not self._check_if_same_pipeline([el[0] for el in history], [el for el in config])
+        return next_param, value_param, is_terminal
 
 
     def _preprocess_moves_util(self, list_moves, index):
@@ -79,6 +82,8 @@ class ConfigSpace_env():
 
         res = self.eval_func(config, self.bestconfig)
 
+        self.score_model.partial_fit(np.nan_to_num(config.get_array()), res)
+
         if res > self.bestconfig["score"]:
             self.bestconfig = {
                 "score": res,
@@ -91,11 +96,12 @@ class ConfigSpace_env():
         self.history[hash_moves] = res
         return res
 
+    def _check_if_same_pipeline(self, pip1, pip2):
+        return set(pip1) != set(pip2)
+
     def has_finite_child(self, history=[]):
         rollout = self.rollout(history)
-        #print(set([el[0] for el in rollout]))
-        #print(set([el[0] for el in history]))
-        return len(set([el[0] for el in rollout])) != len(set([el[0] for el in history]))
+        return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
     def log_result(self):
         if self.logfile != "":
