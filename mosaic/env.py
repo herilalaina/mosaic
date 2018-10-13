@@ -38,14 +38,28 @@ class ConfigSpace_env():
 
     def next_moves(self, history = [], info_childs = []):
         try:
-            config = self.config_space.sample_partial_configuration(history)
+            while True:
+                config = self.config_space.sample_partial_configuration(history)
+                if self._valid_sample(history, config):
+                    break
             moves_executed = set([el[0] for el in history])
             full_config = set(config.keys())
             possible_params = list(full_config - moves_executed)
             id_param = self.score_model.most_importance_parameter(
                 [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
             next_param = possible_params[id_param]
-            value_param = config[next_param]
+
+            while True:
+                #print("**************************************************************")
+                value_param = config[next_param]
+                new_history = history + [(next_param, value_param)]
+                new_config = self.config_space.sample_partial_configuration(new_history)
+                #print(new_history)
+                #print(new_config)
+                #print(self._valid_sample(new_history, new_config))
+                if self._valid_sample(new_history, new_config):
+                    break
+
             history.append((next_param, value_param))
         except Exception as e:
             print("Exception for {0}".format(history))
@@ -53,6 +67,11 @@ class ConfigSpace_env():
         is_terminal = not self._check_if_same_pipeline([el[0] for el in history], [el for el in config])
         return next_param, value_param, is_terminal
 
+    def _valid_sample(self, history, config):
+        for hp_name, hp_value in history:
+            if hp_name not in config.keys() or config[hp_name] != hp_value:
+                return False
+        return True
 
     def _preprocess_moves_util(self, list_moves, index):
         model = list_moves[index][0]
