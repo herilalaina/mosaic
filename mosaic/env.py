@@ -6,6 +6,8 @@ import numpy as np
 
 from mosaic.model_score import ScoreModel
 
+from ConfigSpace.hyperparameters import CategoricalHyperparameter
+
 
 class ConfigSpace_env():
     """Base class for environement."""
@@ -49,17 +51,31 @@ class ConfigSpace_env():
                 [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
             next_param = possible_params[id_param]
 
+            next_param_cs = self.config_space._hyperparameters[next_param]
+            list_value_to_choose = []
             while True:
-                #print("**************************************************************")
                 value_param = config[next_param]
                 new_history = history + [(next_param, value_param)]
                 new_config = self.config_space.sample_partial_configuration(new_history)
-                #print(new_history)
-                #print(new_config)
-                #print(self._valid_sample(new_history, new_config))
                 if self._valid_sample(new_history, new_config):
-                    break
+                    list_value_to_choose.append(value_param)
+                    if len(list_value_to_choose) > 20:
+                        break
 
+            if type(self.config_space._hyperparameters[next_param]) == CategoricalHyperparameter:
+                value_param = self.score_model.rave_value(
+                    np.unique([next_param_cs._inverse_transform(v) for v in list_value_to_choose]),
+                    self.config_space.get_idx_by_hyperparameter_name(next_param),
+                    True,
+                    self.config_space._hyperparameters[next_param].choices
+                )
+                value_param = next_param_cs._transform(value_param)
+            else:
+                value_param = self.score_model.rave_value(list_value_to_choose,
+                                            self.config_space.get_idx_by_hyperparameter_name(next_param),
+                                            False,
+                                            None
+                                            )
             history.append((next_param, value_param))
         except Exception as e:
             print("Exception for {0}".format(history))

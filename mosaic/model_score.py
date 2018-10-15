@@ -41,3 +41,50 @@ class ScoreModel():
             return np.argmax([np.abs(self.model.coef_[id - self.nb_param]) for id in ids])
         else:
             return np.random.randint(len(ids))
+
+    def rave_value(self, value, idx, is_categorical, range_value):
+        #print(value)
+        if len(value) == 1:
+            return value[0]
+        elif(len(self.X) < 10):
+            return np.random.choice(value)
+
+
+        #TODO: to optimize
+        N = len(self.X)
+        X_ = np.array(self.X)
+        Y_ = np.array(self.y)
+
+        if is_categorical:
+            list_value = [0] * len(range_value)
+
+            for v in range(len(range_value)):
+                if list_value[v] != 0:
+                    list_score = Y_[X_[:, idx - self.nb_param] == v]
+                    if len(list_value) > 0:
+                        list_value[v] = np.mean(list_value) + np.sqrt(2 * np.log10(N) / len(list_value))
+                    else:
+                        list_value[v] = 10
+
+            id_max = np.argmax([list_value[v] for v in value])
+            return value[id_max]
+        else:
+            list_value = [0] * len(value)
+            #print(idx)
+            #print(X_.shape)
+            res = (X_[:, idx] != 0)
+            X = X_[res, :]
+            Y = Y_[res]
+
+            if len(Y) > 10:
+                sigma = np.std(X[:, idx])
+                for i, v in enumerate(value):
+                    T = np.sum([np.exp(-(v - x[idx]) ** 2 / (2 * sigma ** 2)) for x, y in zip(X, Y)])
+                    if T != 0:
+                        list_value[i] = np.sum([np.exp(-(v - x[idx]) ** 2 / (2 * sigma ** 2)) * y / T for x, y in zip(X, Y)])
+                    else:
+                        list_value[i] = 0
+            else:
+                return np.random.choice(value)
+            id_max = np.argmax(list_value)
+            return value[id_max]
