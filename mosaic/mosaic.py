@@ -7,8 +7,8 @@ import logging
 
 
 class Search:
-    def __init__(self, eval_func, config_space, logfile = '', mem_in_mb=4048, cpu_time_in_s=5):
-        env = ConfigSpace_env(eval_func, config_space=config_space, mem_in_mb=4048, cpu_time_in_s=5, logfile = logfile)
+    def __init__(self, eval_func, config_space, logfile = '', mem_in_mb=3024, cpu_time_in_s=360):
+        env = ConfigSpace_env(eval_func, config_space=config_space, mem_in_mb=mem_in_mb, cpu_time_in_s=360, logfile = logfile)
         self.mcts = MCTS(env = env)
 
         # config logger
