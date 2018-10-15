@@ -14,11 +14,11 @@ class ConfigSpace_env():
 
     terminal_state = []
     bestconfig = {
-        "score": 0,
+        "score_validation": 0,
         "model": None
     }
 
-    def __init__(self, eval_func, config_space, logfile = "", mem_in_mb=4048, cpu_time_in_s=5):
+    def __init__(self, eval_func, config_space, logfile = "", mem_in_mb=3600, cpu_time_in_s=30):
         """Constructor."""
         self.history = {}
         self.start_time = time.time()
@@ -33,6 +33,7 @@ class ConfigSpace_env():
         self.eval_func = pynisher.enforce_limits(mem_in_mb=mem_in_mb,
                                                  cpu_time_in_s=cpu_time_in_s,
                                                  logger=None)(eval_func)
+        self.history_score = []
 
     def rollout(self, history = []):
         config = self.config_space.sample_partial_configuration(history)
@@ -116,20 +117,21 @@ class ConfigSpace_env():
             return self.history[hash_moves]
 
         res = self.eval_func(config, self.bestconfig)
+        self.log_result(res)
 
-        self.score_model.partial_fit(np.nan_to_num(config.get_array()), res)
+        self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
-        if res > self.bestconfig["score"]:
+        if res["validation_score"] > self.bestconfig["score_validation"]:
             self.bestconfig = {
-                "score": res,
+                "score_validation": res["validation_score"],
+                "test_score": res["test_score"],
                 "model": config
             }
-            self.log_result()
-            print("Best score", res)
+            print("Best score", res["validation_score"])
 
         # Add into history
-        self.history[hash_moves] = res
-        return res
+        self.history[hash_moves] = res["validation_score"]
+        return res["validation_score"]
 
     def _check_if_same_pipeline(self, pip1, pip2):
         return set(pip1) != set(pip2)
@@ -138,7 +140,12 @@ class ConfigSpace_env():
         rollout = self.rollout(history)
         return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
-    def log_result(self):
+    def log_result(self, res):
+        self.history_score.append({
+            "running_time": time.time() - self.start_time,
+            "cv_score": res["validation_score"],
+            "test_score": res["test_score"]
+        })
         if self.logfile != "":
             with open(self.logfile, "a+") as f:
-                f.write("{0},{1}\n".format(time.time() - self.start_time, self.bestconfig["score"]))
+                f.write("{0},{1}\n".format(time.time() - self.start_time, res["score_validation"], res["test_score"]))
