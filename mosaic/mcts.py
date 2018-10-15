@@ -48,11 +48,6 @@ class MCTS():
         while not self.tree.is_terminal(node):
             if len(self.tree.get_childs(node)) == 0:
                 return self.EXPAND(node)
-                """try:
-                    return self.EXPAND(node)
-                except:
-                    self.tree.set_attribute(node, "terminal", True)
-                    return node"""
             else:
                 if not self.tree.fully_expanded(node, self.env):
                     return self.EXPAND(node)

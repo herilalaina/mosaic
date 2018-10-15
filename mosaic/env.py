@@ -27,6 +27,10 @@ class ConfigSpace_env():
         self.nb_parameters = len(self.config_space._hyperparameters)
         self.preprocess = False
 
+        if self.logfile != "":
+            with open(self.logfile, "w") as f:
+                f.write("Time,Performance\n")
+
         self.score_model = ScoreModel(self.nb_parameters)
 
         # Constrained evaluation
@@ -116,12 +120,15 @@ class ConfigSpace_env():
         if hash_moves in self.history:
             return self.history[hash_moves]
 
-        res = self.eval_func(config, self.bestconfig)
-        self.log_result(res)
+        try:
+            res = self.eval_func(config, self.bestconfig)
+        except:
+            res = {"validation_score": 0, "test_score": 0}
 
         self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
         if res["validation_score"] > self.bestconfig["score_validation"]:
+            self.log_result(res)
             self.bestconfig = {
                 "score_validation": res["validation_score"],
                 "test_score": res["test_score"],
@@ -148,4 +155,4 @@ class ConfigSpace_env():
         })
         if self.logfile != "":
             with open(self.logfile, "a+") as f:
-                f.write("{0},{1}\n".format(time.time() - self.start_time, res["score_validation"], res["test_score"]))
+                f.write("{0},{1}\n".format(time.time() - self.start_time, res["test_score"]))
