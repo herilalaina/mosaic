@@ -76,7 +76,7 @@ def svm_from_cfg(cfg, best_config):
 
     scores = cross_val_score(clf, iris.data, iris.target, cv=5)
     #print("Config {0} score {1}".format(cfg, 1-np.mean(scores)))
-    return np.mean(scores)  # Minimize!
+    return res = {"validation_score": np.mean(scores), "test_score": 0}  # Minimize!
 
 
 mosaic = Search(eval_func=svm_from_cfg, config_space=cs)
