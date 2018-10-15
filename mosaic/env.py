@@ -63,24 +63,8 @@ class ConfigSpace_env():
                 new_history = history + [(next_param, value_param)]
                 new_config = self.config_space.sample_partial_configuration(new_history)
                 if self._valid_sample(new_history, new_config):
-                    list_value_to_choose.append(value_param)
-                    if len(list_value_to_choose) > 20:
                         break
 
-            if type(self.config_space._hyperparameters[next_param]) == CategoricalHyperparameter:
-                value_param = self.score_model.rave_value(
-                    np.unique([next_param_cs._inverse_transform(v) for v in list_value_to_choose]),
-                    self.config_space.get_idx_by_hyperparameter_name(next_param),
-                    True,
-                    self.config_space._hyperparameters[next_param].choices
-                )
-                value_param = next_param_cs._transform(value_param)
-            else:
-                value_param = self.score_model.rave_value(list_value_to_choose,
-                                            self.config_space.get_idx_by_hyperparameter_name(next_param),
-                                            False,
-                                            None
-                                            )
             history.append((next_param, value_param))
         except Exception as e:
             print("Exception for {0}".format(history))
@@ -122,9 +106,11 @@ class ConfigSpace_env():
 
         try:
             res = self.eval_func(config, self.bestconfig)
-        except:
+        except Exception as e:
             res = {"validation_score": 0, "test_score": 0}
 
+        if res is None:
+            res = {"validation_score": 0, "test_score": 0}
         self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
         if res["validation_score"] > self.bestconfig["score_validation"]:

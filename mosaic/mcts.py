@@ -2,6 +2,7 @@
 
 import logging
 import math
+import time
 
 from mosaic.strategy.policy import UCT, Besa
 from mosaic.node import Node
@@ -10,8 +11,9 @@ from mosaic.node import Node
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, policy="besa", knowledge=None):
+    def __init__(self, env, policy="besa", knowledge=None, time_budget=3600):
         self.env = env
+        self.time_budget = time_budget
 
         # Init tree
         self.tree = Node()
@@ -88,8 +90,12 @@ class MCTS():
             self.tree.set_attribute(parent, "visits", new_vis)
 
     def run(self, n = 1, generate_image_path = ""):
+        self.env._evaluate(self.env.config_space.get_default_configuration())
         for i in range(n):
-            self.MCT_SEARCH()
-            if generate_image_path != "":
-                self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+            if time.time() - self.env.start_time < self.time_budget:
+                self.MCT_SEARCH()
+                if generate_image_path != "":
+                    self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+            else:
+                return 0
         print("")
