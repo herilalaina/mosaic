@@ -18,7 +18,13 @@ class ConfigSpace_env():
         "model": None
     }
 
-    def __init__(self, eval_func, config_space, logfile = "", mem_in_mb=3600, cpu_time_in_s=30):
+    def __init__(self, eval_func,
+                 config_space,
+                 logfile = "",
+                 mem_in_mb=3600,
+                 cpu_time_in_s=30,
+                 use_parameter_importance=True,
+                 use_rave=False):
         """Constructor."""
         self.history = {}
         self.start_time = time.time()
@@ -26,6 +32,8 @@ class ConfigSpace_env():
         self.config_space = config_space
         self.nb_parameters = len(self.config_space._hyperparameters)
         self.preprocess = False
+        self.use_parameter_importance = use_parameter_importance
+        self.use_rave = use_rave
 
         if self.logfile != "":
             with open(self.logfile, "w") as f:
@@ -53,18 +61,45 @@ class ConfigSpace_env():
             moves_executed = set([el[0] for el in history])
             full_config = set(config.keys())
             possible_params = list(full_config - moves_executed)
-            id_param = self.score_model.most_importance_parameter(
-                [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
+            if self.use_parameter_importance:
+                id_param = self.score_model.most_importance_parameter(
+                    [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
+            else:
+                id_param = np.random.randint(0, len(possible_params))
             next_param = possible_params[id_param]
 
-            next_param_cs = self.config_space._hyperparameters[next_param]
-            list_value_to_choose = []
-            while True:
-                value_param = config[next_param]
-                new_history = history + [(next_param, value_param)]
-                new_config = self.config_space.sample_partial_configuration(new_history)
-                if self._valid_sample(new_history, new_config):
-                        break
+            if self.use_rave:
+                next_param_cs = self.config_space._hyperparameters[next_param]
+                value_to_choose = []
+                while True:
+                    value_param = config[next_param]
+                    new_history = history + [(next_param, value_param)]
+                    new_config = self.config_space.sample_partial_configuration(new_history)
+                    if self._valid_sample(new_history, new_config):
+                        value_to_choose.append(value_param)
+                        if len(value_to_choose ) > 10:
+                            break
+                value_to_choose = np.unique(value_to_choose)
+                idx_param = self.config_space.get_idx_by_hyperparameter_name(next_param)
+                if type(self.config_space._hyperparameters[next_param]) == CategoricalHyperparameter:
+                    value_param = self.score_model.rave_value(
+                        [next_param_cs._inverse_transform(v) for v in value_to_choose],
+                        idx_param,
+                        True,
+                        self.config_space._hyperparameters[next_param].choices)
+                    value_param = next_param_cs._transform(value_param)
+                else:
+                    value_param = self.score_model.rave_value(value_to_choose,
+                                                              idx_param,
+                                                              False,
+                                                              None)
+            else:
+                while True:
+                    value_param = config[next_param]
+                    new_history = history + [(next_param, value_param)]
+                    new_config = self.config_space.sample_partial_configuration(new_history)
+                    if self._valid_sample(new_history, new_config):
+                            break
 
             history.append((next_param, value_param))
         except Exception as e:
