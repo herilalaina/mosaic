@@ -80,6 +80,6 @@ def svm_from_cfg(cfg, best_config):
 
 
 mosaic = Search(eval_func=svm_from_cfg, config_space=cs)
-res = mosaic.run(nb_simulation = 5000)
+res = mosaic.run(nb_simulation = 5000, generate_image_path = "")
 
 print(res)
