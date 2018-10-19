@@ -71,8 +71,6 @@ class ScoreModel():
             return value[id_max]
         else:
             list_value = [0] * len(value)
-            #print(idx)
-            #print(X_.shape)
             res = (X_[:, idx] != 0)
             X = X_[res, :]
             Y = Y_[res]
