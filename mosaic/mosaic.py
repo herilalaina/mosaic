@@ -57,7 +57,8 @@ class Search:
             try:
                 score = func_test(model, X_train, y_train, X_test, y_test)
                 scores.append((time, score))
-            except:
+            except Exception as e:
+                print(e)
                 pass
         return scores
 
