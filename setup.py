@@ -7,5 +7,5 @@ setup(name='mosaic-config',
       author='Herilalaina Rakotoarison',
       author_email='heri@lri.fr',
       license='BSD-3',
-      packages=['mosaic-config'],
+      packages=['mosaic'],
       zip_safe=False)
