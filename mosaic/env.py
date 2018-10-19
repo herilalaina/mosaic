@@ -34,9 +34,9 @@ class ConfigSpace_env():
         self.score_model = ScoreModel(self.nb_parameters)
 
         # Constrained evaluation
-        self.eval_func = pynisher.enforce_limits(mem_in_mb=mem_in_mb,
-                                                 cpu_time_in_s=cpu_time_in_s,
-                                                 logger=None)(eval_func)
+        self.cpu_time_in_s = cpu_time_in_s
+        self.mem_in_mb = mem_in_mb
+        self.eval_func = eval_func
         self.history_score = []
 
     def rollout(self, history = []):
@@ -120,6 +120,9 @@ class ConfigSpace_env():
         if hash_moves in self.history:
             return self.history[hash_moves]
 
+        eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb,
+                                                 cpu_time_in_s=self.cpu_time_in_s,
+                                                 logger=None)(self.eval_func)
         try:
             res = self.eval_func(config, self.bestconfig)
         except:

@@ -88,8 +88,10 @@ class MCTS():
             self.tree.set_attribute(parent, "visits", new_vis)
 
     def run(self, n = 1, generate_image_path = ""):
+        self.env.cpu_time_in_s = 10
         for i in range(n):
             self.MCT_SEARCH()
+            self.env.cpu_time_in_s += 1
             if generate_image_path != "":
                 self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
-        print("")
+        #print("")
