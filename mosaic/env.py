@@ -12,12 +12,6 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 class ConfigSpace_env():
     """Base class for environement."""
 
-    terminal_state = []
-    bestconfig = {
-        "score_validation": 0,
-        "model": None
-    }
-
     def __init__(self, eval_func,
                  config_space,
                  logfile = "",
@@ -26,6 +20,10 @@ class ConfigSpace_env():
                  use_parameter_importance=True,
                  use_rave=False):
         """Constructor."""
+        self.bestconfig = {
+            "score_validation": 0,
+            "model": None
+        }
         self.history = {}
         self.start_time = time.time()
         self.logfile = logfile
@@ -146,17 +144,16 @@ class ConfigSpace_env():
         try:
             res = self.eval_func(config, self.bestconfig)
         except Exception as e:
-            res = {"validation_score": 0, "test_score": 0}
+            res = {"validation_score": 0, "model": None}
 
         if res is None:
-            res = {"validation_score": 0, "test_score": 0}
+            res = {"validation_score": 0, "model": None}
         self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
         if res["validation_score"] > self.bestconfig["score_validation"]:
             self.log_result(res)
             self.bestconfig = {
                 "score_validation": res["validation_score"],
-                "test_score": res["test_score"],
                 "model": config
             }
             print("Best score", res["validation_score"])
@@ -180,8 +177,8 @@ class ConfigSpace_env():
         self.history_score.append({
             "running_time": time.time() - self.start_time,
             "cv_score": res["validation_score"],
-            "test_score": res["test_score"]
+            "model": res["model"]
         })
-        if self.logfile != "":
-            with open(self.logfile, "a+") as f:
-                f.write("{0},{1}\n".format(time.time() - self.start_time, res["test_score"]))
+        #if self.logfile != "":
+        #    with open(self.logfile, "a+") as f:
+        #        f.write("{0},{1}\n".format(time.time() - self.start_time, res["test_score"]))

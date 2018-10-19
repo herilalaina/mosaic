@@ -6,6 +6,7 @@ sys.path.insert(0,parentdir)
 import numpy as np
 from sklearn import svm, datasets
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split
 
 # Import ConfigSpace and different types of parameters
 from ConfigSpace import ConfigurationSpace
@@ -46,6 +47,8 @@ cs.add_condition(InCondition(child=degree, parent=kernel, values=["poly"]))
 
 
 iris = datasets.load_iris()
+X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, test_size=0.33, random_state=42)
+
 
 
 def svm_from_cfg(cfg, best_config):
@@ -74,9 +77,15 @@ def svm_from_cfg(cfg, best_config):
 
     clf = svm.SVC(**cfg, random_state=42)
 
-    scores = cross_val_score(clf, iris.data, iris.target, cv=5)
-    return {"validation_score": np.mean(scores), "test_score": 0}  # Minimize!
+    scores = cross_val_score(clf, X_train, y_train, cv=5)
+    return {"validation_score": np.mean(scores), "model": clf}  # Minimize!
 
+
+def test_function(model, X_train, y_train, X_test, y_test):
+    from sklearn.metrics import balanced_accuracy_score
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    return balanced_accuracy_score(y_pred, y_test)
 
 mosaic = Search(eval_func=svm_from_cfg,
                 config_space=cs,
@@ -84,7 +93,5 @@ mosaic = Search(eval_func=svm_from_cfg,
                 use_parameter_importance=False,
                 use_rave=False)
 mosaic.print_config()
-
-res = mosaic.run(nb_simulation = 5000, generate_image_path = "")
-
-print(res)
+mosaic.run(nb_simulation = 100)
+print(mosaic.test_performance(X_train, y_train, X_test, y_test, test_function))

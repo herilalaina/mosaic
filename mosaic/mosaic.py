@@ -48,3 +48,16 @@ class Search:
     def run(self, nb_simulation = 1, generate_image_path = ""):
         self.mcts.run(nb_simulation, generate_image_path)
         return self.mcts.env.bestconfig
+
+    def test_performance(self, X_train, y_train, X_test, y_test, func_test):
+        scores = []
+        for r in self.mcts.env.history_score:
+            time = r["running_time"]
+            model = r["model"]
+            try:
+                score = func_test(model, X_train, y_train, X_test, y_test)
+                scores.append((time, score))
+            except:
+                pass
+        return scores
+
