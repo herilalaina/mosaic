@@ -81,8 +81,17 @@ def svm_from_cfg(cfg, best_config):
     return {"validation_score": np.mean(scores), "model": clf}  # Minimize!
 
 
-def test_function(model, X_train, y_train, X_test, y_test):
+def test_function(cfg, X_train, y_train, X_test, y_test):
     from sklearn.metrics import balanced_accuracy_score
+    cfg = {k : cfg[k] for k in cfg if cfg[k]}
+    # We translate boolean values:
+    cfg["shrinking"] = True if cfg["shrinking"] == "true" else False
+    # And for gamma, we set it to a fixed value or to "auto" (if used)
+    if "gamma" in cfg:
+        cfg["gamma"] = cfg["gamma_value"] if cfg["gamma"] == "value" else "auto"
+        cfg.pop("gamma_value", None)  # Remove "gamma_value"
+
+    model = svm.SVC(**cfg, random_state=42)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     return balanced_accuracy_score(y_pred, y_test)

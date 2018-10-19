@@ -10,11 +10,11 @@ class Search:
     def __init__(self, eval_func,
                  config_space,
                  logfile = '',
-                 multi_fidelity=False,
                  mem_in_mb=3024,
                  cpu_time_in_s=360,
                  time_budget=3600,
-                 use_parameter_importance=True,
+                 multi_fidelity=False,
+                 use_parameter_importance=False,
                  use_rave=False):
         env = ConfigSpace_env(eval_func,
                               config_space=config_space,
@@ -61,4 +61,3 @@ class Search:
                 print(e)
                 pass
         return scores
-

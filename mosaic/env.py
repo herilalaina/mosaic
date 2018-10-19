@@ -151,12 +151,12 @@ class ConfigSpace_env():
         self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
         if res["validation_score"] > self.bestconfig["score_validation"]:
-            self.log_result(res)
+            self.log_result(res, config)
             self.bestconfig = {
                 "score_validation": res["validation_score"],
                 "model": config
             }
-            print("Best score", res["validation_score"])
+            print("Best validation score", res["validation_score"])
 
         # Add into history
         self.history[hash_moves] = res["validation_score"]
@@ -173,11 +173,11 @@ class ConfigSpace_env():
         rollout = self.rollout(history)
         return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
-    def log_result(self, res):
+    def log_result(self, res, config):
         self.history_score.append({
             "running_time": time.time() - self.start_time,
             "cv_score": res["validation_score"],
-            "model": res["model"]
+            "model": config
         })
         #if self.logfile != "":
         #    with open(self.logfile, "a+") as f:
