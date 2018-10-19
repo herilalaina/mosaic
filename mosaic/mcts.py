@@ -11,9 +11,14 @@ from mosaic.node import Node
 class MCTS():
     """Monte carlo tree search implementation."""
 
-    def __init__(self, env, policy="besa", knowledge=None, time_budget=3600):
+    def __init__(self, env,
+                 policy="besa",
+                 knowledge=None,
+                 time_budget=3600,
+                 multi_fidelity = False):
         self.env = env
         self.time_budget = time_budget
+        self.multi_fidelity = multi_fidelity
 
         # Init tree
         self.tree = Node()
@@ -90,11 +95,16 @@ class MCTS():
             self.tree.set_attribute(parent, "visits", new_vis)
 
     def run(self, n = 1, generate_image_path = ""):
-        self.env.cpu_time_in_s = 10
-        self.env._evaluate(self.env.config_space.get_default_configuration())
+        self.env.run_default_configuration()
+        if self.multi_fidelity:
+            self.env.cpu_time_in_s = 10
         for i in range(n):
             if time.time() - self.env.start_time < self.time_budget:
                 self.MCT_SEARCH()
+
+                if self.multi_fidelity and self.env.cpu_time_in_s < self.env.max_eval_time:
+                    self.env.cpu_time_in_s += 1
+
                 if generate_image_path != "":
                     self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
             else:

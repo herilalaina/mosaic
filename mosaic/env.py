@@ -34,6 +34,7 @@ class ConfigSpace_env():
         self.score_model = ScoreModel(self.nb_parameters)
 
         # Constrained evaluation
+        self.max_eval_time = cpu_time_in_s
         self.cpu_time_in_s = cpu_time_in_s
         self.mem_in_mb = mem_in_mb
         self.eval_func = eval_func
@@ -128,6 +129,10 @@ class ConfigSpace_env():
         # Add into history
         self.history[hash_moves] = res["validation_score"]
         return res["validation_score"]
+
+
+    def run_default_configuration(self):
+        self._evaluate(self.config_space.get_default_configuration())
 
     def _check_if_same_pipeline(self, pip1, pip2):
         return set(pip1) != set(pip2)

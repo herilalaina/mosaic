@@ -2,6 +2,7 @@ from sklearn.linear_model import Lasso
 from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
+
 class ScoreModel():
     def __init__(self, nb_param, X=None, y=None):
         self.model = Lasso()
