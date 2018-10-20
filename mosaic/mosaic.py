@@ -5,11 +5,9 @@ from mosaic.env import ConfigSpace_env
 from mosaic.mcts import MCTS
 import logging
 
-
 class Search:
     def __init__(self, eval_func,
                  config_space,
-                 logfile = '',
                  mem_in_mb=3024,
                  cpu_time_in_s=360,
                  time_budget=3600,
@@ -20,7 +18,6 @@ class Search:
                               config_space=config_space,
                               mem_in_mb=mem_in_mb,
                               cpu_time_in_s=cpu_time_in_s,
-                              logfile = logfile,
                               use_parameter_importance=use_parameter_importance,
                               use_rave=use_rave)
         self.mcts = MCTS(env = env,

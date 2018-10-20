@@ -1,7 +1,7 @@
 """Monte carlo tree seach class."""
 
 import logging
-import math
+import gc
 import time
 
 from mosaic.strategy.policy import UCT, Besa
@@ -13,7 +13,6 @@ class MCTS():
 
     def __init__(self, env,
                  policy="besa",
-                 knowledge=None,
                  time_budget=3600,
                  multi_fidelity = False):
         self.env = env
@@ -34,9 +33,6 @@ class MCTS():
         else:
             raise NotImplemented("Policy {0} not implemented".format(policy))
 
-        # Knowledge
-        self.knowledge = knowledge
-
         # iteration logging
         self.n_iter = 0
 
@@ -46,7 +42,6 @@ class MCTS():
         front = self.TREEPOLICY()
         reward = self.PLAYOUT(front)
         self.BACKUP(front, reward)
-
         self.n_iter += 1
 
     def TREEPOLICY(self):
@@ -109,3 +104,4 @@ class MCTS():
                     self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
             else:
                 return 0
+            gc.collect()

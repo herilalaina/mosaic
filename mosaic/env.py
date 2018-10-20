@@ -14,7 +14,6 @@ class ConfigSpace_env():
 
     def __init__(self, eval_func,
                  config_space,
-                 logfile = "",
                  mem_in_mb=3600,
                  cpu_time_in_s=30,
                  use_parameter_importance=True,
@@ -24,26 +23,18 @@ class ConfigSpace_env():
             "score_validation": 0,
             "model": None
         }
-        self.history = {}
         self.start_time = time.time()
-        self.logfile = logfile
         self.config_space = config_space
-        self.nb_parameters = len(self.config_space._hyperparameters)
-        self.preprocess = False
         self.use_parameter_importance = use_parameter_importance
         self.use_rave = use_rave
-
-        if self.logfile != "":
-            with open(self.logfile, "w") as f:
-                f.write("Time,Performance\n")
-
-        self.score_model = ScoreModel(self.nb_parameters)
 
         # Constrained evaluation
         self.max_eval_time = cpu_time_in_s
         self.cpu_time_in_s = cpu_time_in_s
         self.mem_in_mb = mem_in_mb
         self.eval_func = eval_func
+
+        self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
 
     def rollout(self, history = []):
@@ -134,16 +125,11 @@ class ConfigSpace_env():
         return preprocessed_moves
 
     def _evaluate(self, config):
-        hash_moves = hash(str(config))
-        if hash_moves in self.history:
-            return self.history[hash_moves]
-
-        eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb,
-                                                 cpu_time_in_s=self.cpu_time_in_s,
-                                                 logger=None)(self.eval_func)
+        eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         try:
-            res = self.eval_func(config, self.bestconfig)
+            res = eval_func(config, self.bestconfig)
         except Exception as e:
+            print("Error {0}. Config: {1}".format(e, config))
             res = {"validation_score": 0, "model": None}
 
         if res is None:
@@ -158,8 +144,6 @@ class ConfigSpace_env():
             }
             print("Best validation score", res["validation_score"])
 
-        # Add into history
-        self.history[hash_moves] = res["validation_score"]
         return res["validation_score"]
 
 
@@ -179,6 +163,3 @@ class ConfigSpace_env():
             "cv_score": res["validation_score"],
             "model": config
         })
-        #if self.logfile != "":
-        #    with open(self.logfile, "a+") as f:
-        #        f.write("{0},{1}\n".format(time.time() - self.start_time, res["test_score"]))

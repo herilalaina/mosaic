@@ -78,7 +78,7 @@ def svm_from_cfg(cfg, best_config):
     clf = svm.SVC(**cfg, random_state=42)
 
     scores = cross_val_score(clf, X_train, y_train, cv=5)
-    return {"validation_score": np.mean(scores), "model": clf}  # Minimize!
+    return {"validation_score": np.mean(scores)}  # Minimize!
 
 
 def test_function(cfg, X_train, y_train, X_test, y_test):
