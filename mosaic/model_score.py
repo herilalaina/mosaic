@@ -1,5 +1,6 @@
 from sklearn.linear_model import Lasso
 from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
 import numpy as np
 
 
@@ -29,13 +30,13 @@ class ScoreModel():
         if check_is_fitted(self.model):
             return self.model.coef_
         else:
-            raise Exception("ScoreModel not fitted")
+            raise NotFittedError("ScoreModel not fitted")
 
     def predict(self, x):
         if check_is_fitted(self.model):
             return self.model.predict(x)
         else:
-            raise Exception("ScoreModel not fitted")
+            raise NotFittedError("ScoreModel not fitted")
 
     def most_importance_parameter(self, ids):
         if len(self.X) > 1:

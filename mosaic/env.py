@@ -5,6 +5,7 @@ import pynisher
 import numpy as np
 
 from mosaic.model_score import ScoreModel
+from mosaic.utils import Timeout
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
 
@@ -37,11 +38,11 @@ class ConfigSpace_env():
         self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
 
-    def rollout(self, history = []):
+    def rollout(self, history=[]):
         config = self.config_space.sample_partial_configuration(history)
         return config
 
-    def next_moves(self, history = [], info_childs = []):
+    def next_moves(self, history=[], info_childs=[]):
         try:
             while True:
                 config = self.config_space.sample_partial_configuration(history)
@@ -66,7 +67,7 @@ class ConfigSpace_env():
                     new_config = self.config_space.sample_partial_configuration(new_history)
                     if self._valid_sample(new_history, new_config):
                         value_to_choose.append(value_param)
-                        if len(value_to_choose ) > 10:
+                        if len(value_to_choose) > 10:
                             break
                 value_to_choose = np.unique(value_to_choose)
                 idx_param = self.config_space.get_idx_by_hyperparameter_name(next_param)
@@ -88,12 +89,14 @@ class ConfigSpace_env():
                     new_history = history + [(next_param, value_param)]
                     new_config = self.config_space.sample_partial_configuration(new_history)
                     if self._valid_sample(new_history, new_config):
-                            break
+                        break
 
             history.append((next_param, value_param))
+        except Timeout.Timeout as e:
+            raise (e)
         except Exception as e:
             print("Exception for {0}".format(history))
-            raise(e)
+            raise (e)
         is_terminal = not self._check_if_same_pipeline([el[0] for el in history], [el for el in config])
         return next_param, value_param, is_terminal
 
@@ -128,6 +131,8 @@ class ConfigSpace_env():
         eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         try:
             res = eval_func(config, self.bestconfig)
+        except Timeout.Timeout as e:
+            raise (e)
         except Exception as e:
             print("Pynisher Error {0}. Config: {1}".format(e, config))
             res = {"validation_score": 0, "model": None}
@@ -145,7 +150,6 @@ class ConfigSpace_env():
             print("Best validation score", res["validation_score"])
 
         return res["validation_score"]
-
 
     def run_default_configuration(self):
         self._evaluate(self.config_space.get_default_configuration())

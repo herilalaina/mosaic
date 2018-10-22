@@ -6,6 +6,7 @@ import time
 
 from mosaic.strategy.policy import UCT, Besa
 from mosaic.node import Node
+from mosaic.utils import Timeout
 
 
 class MCTS():
@@ -93,15 +94,19 @@ class MCTS():
         self.env.run_default_configuration()
         if self.multi_fidelity:
             self.env.cpu_time_in_s = 10
-        for i in range(n):
-            if time.time() - self.env.start_time < self.time_budget:
-                self.MCT_SEARCH()
+        try:
+            with Timeout(self.time_budget):
+                for i in range(n):
+                    if time.time() - self.env.start_time < self.time_budget:
+                        self.MCT_SEARCH()
 
-                if self.multi_fidelity and self.env.cpu_time_in_s < self.env.max_eval_time:
-                    self.env.cpu_time_in_s += 1
+                        if self.multi_fidelity and self.env.cpu_time_in_s < self.env.max_eval_time:
+                            self.env.cpu_time_in_s += 1
 
-                if generate_image_path != "":
-                    self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
-            else:
-                return 0
-            gc.collect()
+                        if generate_image_path != "":
+                            self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+                    else:
+                        return 0
+                    gc.collect()
+        except Timeout.Timeout:
+            return 0
