@@ -129,7 +129,7 @@ class ConfigSpace_env():
         try:
             res = eval_func(config, self.bestconfig)
         except Exception as e:
-            print("Error {0}. Config: {1}".format(e, config))
+            print("Pynisher Error {0}. Config: {1}".format(e, config))
             res = {"validation_score": 0, "model": None}
 
         if res is None:
