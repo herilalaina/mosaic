@@ -53,7 +53,8 @@ class Search:
             model = r["model"]
             try:
                 score = func_test(model, X_train, y_train, X_test, y_test)
-                scores.append((time, score))
+                if score is not None:
+                    scores.append((time, score))
             except Exception as e:
                 print(e)
                 pass
