@@ -40,7 +40,9 @@ class ScoreModel():
 
     def most_importance_parameter(self, ids):
         if len(self.X) > 1:
-            return np.argmax([np.abs(self.model.coef_[id - self.nb_param]) for id in ids])
+            weights = [np.abs(self.model.coef_[id - self.nb_param]) for id in ids]
+            weights = weights / sum(weights)
+            return np.random.choice(ids, p=weights)
         else:
             return np.random.randint(len(ids))
 
