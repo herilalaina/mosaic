@@ -39,10 +39,10 @@ class ScoreModel():
             raise NotFittedError("ScoreModel not fitted")
 
     def most_importance_parameter(self, ids):
-        if len(self.X) > 1:
+        if len(self.X) > 5:
             weights = [np.abs(self.model.coef_[id - self.nb_param]) for id in ids]
             weights = weights / sum(weights)
-            return np.random.choice(ids, p=weights)
+            return np.random.choice(list(range(len(ids))), p=weights)
         else:
             return np.random.randint(len(ids))
 
