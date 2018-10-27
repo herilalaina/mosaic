@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='mosaic-conf ig',
+setup(name='mosaic',
       version='0.1',
       description='General algorithm configurator',
       url='https://github.com/herilalaina/mosaic',
