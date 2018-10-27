@@ -15,7 +15,7 @@ class ConfigSpace_env():
 
     def __init__(self, eval_func,
                  config_space,
-                 mem_in_mb=3600,
+                 mem_in_mb=3024,
                  cpu_time_in_s=30,
                  use_parameter_importance=True,
                  use_rave=False):
@@ -37,6 +37,24 @@ class ConfigSpace_env():
 
         self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
+
+    def reset(self, eval_func,
+              mem_in_mb=3024,
+              cpu_time_in_s=30,):
+        self.bestconfig = {
+            "score_validation": 0,
+            "model": None
+        }
+        self.start_time = time.time()
+
+        # Constrained evaluation
+        self.max_eval_time = cpu_time_in_s
+        self.cpu_time_in_s = cpu_time_in_s
+        self.mem_in_mb = mem_in_mb
+        self.eval_func = eval_func
+
+        self.history_score = []
+
 
     def rollout(self, history=[]):
         config = self.config_space.sample_partial_configuration(history)

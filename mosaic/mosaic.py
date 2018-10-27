@@ -46,6 +46,15 @@ class Search:
         self.mcts.run(nb_simulation, generate_image_path)
         return self.mcts.env.bestconfig
 
+    def run_warmstrat(self, eval_func,
+                      mem_in_mb=3024,
+                      cpu_time_in_s=360,
+                      time_budget=3600,
+                      nb_simulation = 1):
+        self.mcts.env.reset(eval_func, mem_in_mb, cpu_time_in_s)
+        self.mcts.reset(time_budget)
+        self.run(nb_simulation=nb_simulation)
+
     def test_performance(self, X_train, y_train, X_test, y_test, func_test):
         scores = []
         for r in self.mcts.env.history_score:
