@@ -43,6 +43,7 @@ class Search:
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     def run(self, nb_simulation = 1, generate_image_path = ""):
+        self.print_config()
         self.mcts.run(nb_simulation, generate_image_path)
         return self.mcts.env.bestconfig
 
@@ -53,6 +54,7 @@ class Search:
                       nb_simulation = 1):
         self.mcts.env.reset(eval_func, mem_in_mb, cpu_time_in_s)
         self.mcts.reset(time_budget)
+        self.print_config()
         self.run(nb_simulation=nb_simulation)
 
     def test_performance(self, X_train, y_train, X_test, y_test, func_test):

@@ -145,15 +145,20 @@ class ConfigSpace_env():
             preprocessed_moves.append((model, params))
         return preprocessed_moves
 
-    def _evaluate(self, config):
-        eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
+    def _evaluate(self, config, default=False):
+        if not default:
+            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
+        else:
+            eval_func = self.eval_func
         try:
             res = eval_func(config, self.bestconfig)
         except Timeout.Timeout as e:
+            print("Timeout!!")
             raise (e)
         except Exception as e:
             print("Pynisher Error {0}. Config: {1}".format(e, config))
             res = {"validation_score": 0, "model": None}
+            raise e
 
         if res is None:
             res = {"validation_score": 0, "model": None}
@@ -170,7 +175,10 @@ class ConfigSpace_env():
         return res["validation_score"]
 
     def run_default_configuration(self):
-        self._evaluate(self.config_space.get_default_configuration())
+        try:
+            self._evaluate(self.config_space.get_default_configuration(), default=True)
+        except:
+            pass
 
     def _check_if_same_pipeline(self, pip1, pip2):
         return set(pip1) != set(pip2)
