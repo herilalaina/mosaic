@@ -55,7 +55,8 @@ class Search:
         self.mcts.env.reset(eval_func, mem_in_mb, cpu_time_in_s)
         self.mcts.reset(time_budget)
         self.print_config()
-        self.run(nb_simulation=nb_simulation)
+        self.mcts.run(100000000, "")
+        return self.mcts.env.bestconfig
 
     def test_performance(self, X_train, y_train, X_test, y_test, func_test):
         scores = []

@@ -40,7 +40,7 @@ class ConfigSpace_env():
 
     def reset(self, eval_func,
               mem_in_mb=3024,
-              cpu_time_in_s=30,):
+              cpu_time_in_s=30):
         self.bestconfig = {
             "score_validation": 0,
             "model": None
