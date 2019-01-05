@@ -147,7 +147,10 @@ class ConfigSpace_env():
                 "score_validation": res["validation_score"],
                 "model": config
             }
-            print("Best validation score", res["validation_score"])
+            print("!! {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
+        else:
+            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
+            #print("Best validation score", res["validation_score"])
 
         return res["validation_score"]
 
