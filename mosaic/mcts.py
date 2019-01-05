@@ -37,6 +37,11 @@ class MCTS():
         # iteration logging
         self.n_iter = 0
 
+
+    def reset(self, time_budget=3600):
+        self.time_budget = time_budget
+        self.n_iter = 0
+
     def MCT_SEARCH(self):
         """Monte carlo tree search iteration."""
         self.logger.info("#########################Iteration={0}##################################".format(self.n_iter))

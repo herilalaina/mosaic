@@ -1,8 +1,8 @@
 import math
 import networkx as nx
-from networkx.drawing.nx_agraph import write_dot
 
 try:
+    from networkx.drawing.nx_agraph import write_dot
     from networkx.drawing.nx_agraph import graphviz_layout
     import matplotlib.pyplot as plt
 except:
