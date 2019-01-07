@@ -13,7 +13,7 @@ class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="besa",
+                 policy="uct",
                  time_budget=3600,
                  multi_fidelity = False):
         self.env = env
