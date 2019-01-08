@@ -183,6 +183,12 @@ class ConfigSpace_env():
         except:
             pass
 
+    def run_random_configuration(self):
+        try:
+            self._evaluate(self.config_space.sample_configuration())
+        except:
+            pass
+
     def _check_if_same_pipeline(self, pip1, pip2):
         return set(pip1) != set(pip2)
 

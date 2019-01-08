@@ -96,11 +96,16 @@ class MCTS():
             self.tree.set_attribute(parent, "visits", new_vis)
 
     def run(self, n = 1, generate_image_path = ""):
+        start_run = time.time()
         self.env.run_default_configuration()
+        #dump_cutoff = self.env.cpu_time_in_s
+        #self.env.cpu_time_in_s = 10
+        [self.env.run_random_configuration() for i in range(50)]
+        #self.env.cpu_time_in_s = dump_cutoff
         if self.multi_fidelity:
             self.env.cpu_time_in_s = 10
         try:
-            with Timeout(self.time_budget):
+            with Timeout(self.time_budget - (start_run - time.time())):
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
                         self.MCT_SEARCH()

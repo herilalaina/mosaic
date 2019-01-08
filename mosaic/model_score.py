@@ -1,4 +1,4 @@
-from sklearn.linear_model import Lasso
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 import numpy as np
@@ -7,7 +7,7 @@ import pickle, os
 
 class ScoreModel():
     def __init__(self, nb_param, X=None, y=None):
-        self.model = Lasso()
+        self.model = RandomForestRegressor()
         self.nb_param = nb_param
         self.path = path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
 
@@ -47,7 +47,7 @@ class ScoreModel():
 
     def importance_variable(self):
         if check_is_fitted(self.model):
-            return self.model.coef_
+            return self.model.feature_importances_
         else:
             raise NotFittedError("ScoreModel not fitted")
 
@@ -59,7 +59,7 @@ class ScoreModel():
 
     def most_importance_parameter(self, ids):
         if self.nb_added > 5:
-            weights = [np.abs(self.model.coef_[id - self.nb_param]) for id in ids]
+            weights = [np.abs(self.model.feature_importances_[id - self.nb_param]) for id in ids]
             weights = weights / sum(weights)
             return np.random.choice(list(range(len(ids))), p=weights)
         else:
@@ -71,7 +71,6 @@ class ScoreModel():
             return value[0]
         elif(len(self.X) < 10):
             return np.random.choice(value)
-
 
         #TODO: to optimize
         N = len(self.X)
