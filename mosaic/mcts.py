@@ -13,7 +13,7 @@ class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="uct",
+                 policy="besa",
                  time_budget=3600,
                  multi_fidelity = False):
         self.env = env
@@ -103,7 +103,7 @@ class MCTS():
         [self.env.run_random_configuration() for i in range(50)]
         #self.env.cpu_time_in_s = dump_cutoff
         if self.multi_fidelity:
-            self.env.cpu_time_in_s = 10
+            self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
         try:
             with Timeout(int(self.time_budget - (start_run - time.time()))):
                 for i in range(n):
