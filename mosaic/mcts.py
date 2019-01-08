@@ -105,7 +105,7 @@ class MCTS():
         if self.multi_fidelity:
             self.env.cpu_time_in_s = 10
         try:
-            with Timeout(self.time_budget - (start_run - time.time())):
+            with Timeout(int(self.time_budget - (start_run - time.time()))):
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
                         self.MCT_SEARCH()
