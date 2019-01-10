@@ -3,17 +3,19 @@
 import logging
 import gc
 import time
+import numpy as np
 
 from mosaic.strategy.policy import UCT, Besa
 from mosaic.node import Node
 from mosaic.utils import Timeout
+from mosaic.utils import get_index_percentile
 
 
 class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="besa",
+                 policy="uct",
                  time_budget=3600,
                  multi_fidelity = False):
         self.env = env
@@ -82,10 +84,25 @@ class MCTS():
 
     def PLAYOUT(self, node_id):
         """Playout policy."""
+        """tried_config = []
+        list_score = []
+        for _ in range(5):
+            playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
+            if playout_node not in list_score:
+                score = self.policy.evaluate(self.env._evaluate, [playout_node])
+                tried_config.append(playout_node)
+                list_score.append(score)
+        index_median = get_index_percentile(list_score, 0.5)
+        self.env.log_result(list_score[index_median], tried_config[index_median])
+        self.logger.info("Playout\t param={0}\t score={1}".format(tried_config[index_median], list_score[index_median]))
+        return list_score[index_median]"""
+
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
+        self.env.log_result(score, playout_node)
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
         return score
+
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
@@ -100,7 +117,7 @@ class MCTS():
         self.env.run_default_configuration()
         #dump_cutoff = self.env.cpu_time_in_s
         #self.env.cpu_time_in_s = 10
-        [self.env.run_random_configuration() for i in range(50)]
+        # [self.env.run_random_configuration() for i in range(50)]
         #self.env.cpu_time_in_s = dump_cutoff
         if self.multi_fidelity:
             self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)

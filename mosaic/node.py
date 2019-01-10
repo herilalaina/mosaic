@@ -45,7 +45,7 @@ class Node():
             return True
 
         nb_current_childs = len(list(self.tree.successors(node_id)))
-        nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), 0.6))
+        nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), 0.5))
         if nb_current_childs >= nb_child_allowed:
             return True
 

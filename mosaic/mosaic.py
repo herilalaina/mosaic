@@ -58,15 +58,18 @@ class Search:
         self.mcts.run(100000000, "")
         return self.mcts.env.bestconfig
 
+    def get_history_run(self):
+        return self.mcts.env.final_model
+
     def test_performance(self, X_train, y_train, X_test, y_test, func_test):
         scores = []
-        for r in self.mcts.env.history_score:
+        for r in self.mcts.env.final_model:
             time = r["running_time"]
             model = r["model"]
             try:
                 score = func_test(model, X_train, y_train, X_test, y_test)
                 if score is not None:
-                    scores.append((time, score))
+                    scores.append((time, score, r["cv_score"]))
             except Exception as e:
                 print(e)
                 pass

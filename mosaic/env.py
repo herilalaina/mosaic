@@ -5,7 +5,7 @@ import pynisher
 import numpy as np
 
 from mosaic.model_score import ScoreModel
-from mosaic.utils import Timeout
+from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
 
@@ -21,7 +21,7 @@ class ConfigSpace_env():
                  use_rave=False):
         """Constructor."""
         self.bestconfig = {
-            "score_validation": 0,
+            "cv_score": 0,
             "model": None
         }
         self.start_time = time.time()
@@ -37,12 +37,16 @@ class ConfigSpace_env():
 
         self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
+        self.final_model = []
+
+        # statistics
+        self.sucess_run = 0
 
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
         self.bestconfig = {
-            "score_validation": 0,
+            "cv_score": 0,
             "model": None
         }
         self.start_time = time.time()
@@ -152,6 +156,7 @@ class ConfigSpace_env():
             eval_func = self.eval_func
         try:
             res = eval_func(config, self.bestconfig)
+            self.sucess_run += 1
         except Timeout.Timeout as e:
             print("Timeout!!")
             raise (e)
@@ -162,18 +167,23 @@ class ConfigSpace_env():
 
         if res is None:
             res = {"validation_score": 0, "model": None}
-        self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
-        if res["validation_score"] > self.bestconfig["score_validation"]:
-            self.log_result(res, config)
-            self.bestconfig = {
-                "score_validation": res["validation_score"],
-                "model": config
-            }
+        if res["validation_score"] > 0:
+            self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
+
+        if default and res["validation_score"] != 0:
+            self.log_result(res["validation_score"], config)
+
+        """self.log_result(res, config)
+
+        percentile = 1 - (1 / (self.sucess_run + 1))
+        index = get_index_percentile([r["cv_score"] for r in self.history_score], percentile)
+        if self.history_score[index] != self.bestconfig["model"]:
+            self.add_to_final_model(res, self.history_score[index])
+            self.bestconfig = self.history_score[index]
             print("!! {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
         else:
-            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
-            #print("Best validation score", res["validation_score"])
+            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))"""
 
         return res["validation_score"]
 
@@ -196,9 +206,19 @@ class ConfigSpace_env():
         rollout = self.rollout(history)
         return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
-    def log_result(self, res, config):
-        self.history_score.append({
+    def add_to_final_model(self, config):
+        self.final_model.append(config)
+
+    def log_result(self, score, config):
+        run = {
             "running_time": time.time() - self.start_time,
-            "cv_score": res["validation_score"],
+            "cv_score": score,
             "model": config
-        })
+        }
+        self.history_score.append(run)
+
+        print(">> {0}: validation score: {1}\n".format(str(config), score))
+
+        if score > self.bestconfig["cv_score"]:
+            self.add_to_final_model(run)
+            self.bestconfig = run

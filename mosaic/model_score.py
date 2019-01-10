@@ -39,7 +39,7 @@ class ScoreModel():
             self.X.append(x)
             self.y.append(y)
             self.fit()
-            self.save_data()
+            # elf.save_data()
             self.nb_added += 1
 
     def fit(self):

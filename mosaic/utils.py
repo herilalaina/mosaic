@@ -3,10 +3,21 @@
 import random
 import math
 import signal
+import numpy as np
 
 def random_uniform_on_log_space(a, b):
     return math.exp(random.uniform(a, b))
 
+
+def get_index_percentile(vect, perc):
+    if len(vect) == 1:
+        return 0
+    try:
+        idx = perc * (len(vect) - 1)
+        idx = math.ceil(idx + 0.5)
+        return np.argpartition(vect, idx)[idx]
+    except:
+        return np.argmax(vect)
 
 
 class Timeout():
