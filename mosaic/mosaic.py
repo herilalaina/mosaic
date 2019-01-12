@@ -13,13 +13,15 @@ class Search:
                  time_budget=3600,
                  multi_fidelity=False,
                  use_parameter_importance=False,
-                 use_rave=False):
+                 use_rave=False,
+                 seed = 1):
         env = ConfigSpace_env(eval_func,
                               config_space=config_space,
                               mem_in_mb=mem_in_mb,
                               cpu_time_in_s=cpu_time_in_s,
                               use_parameter_importance=use_parameter_importance,
-                              use_rave=use_rave)
+                              use_rave=use_rave,
+                              seed=seed)
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
                          multi_fidelity=multi_fidelity)
@@ -61,13 +63,13 @@ class Search:
     def get_history_run(self):
         return self.mcts.env.final_model
 
-    def test_performance(self, X_train, y_train, X_test, y_test, func_test):
+    def test_performance(self, X_train, y_train, X_test, y_test, func_test, categorical_features):
         scores = []
         for r in self.mcts.env.final_model:
             time = r["running_time"]
             model = r["model"]
             try:
-                score = func_test(model, X_train, y_train, X_test, y_test)
+                score = func_test(model, X_train, y_train, X_test, y_test, categorical_features)
                 if score is not None:
                     scores.append((time, score, r["cv_score"]))
             except Exception as e:

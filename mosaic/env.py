@@ -18,7 +18,8 @@ class ConfigSpace_env():
                  mem_in_mb=3024,
                  cpu_time_in_s=30,
                  use_parameter_importance=True,
-                 use_rave=False):
+                 use_rave=False,
+                 seed = 1):
         """Constructor."""
         self.bestconfig = {
             "cv_score": 0,
@@ -41,6 +42,7 @@ class ConfigSpace_env():
 
         # statistics
         self.sucess_run = 0
+        self.rng = np.random.RandomState(seed)
 
     def reset(self, eval_func,
               mem_in_mb=3024,
@@ -61,18 +63,23 @@ class ConfigSpace_env():
 
 
     def rollout(self, history=[]):
-        config = self.config_space.sample_partial_configuration(history)
+        try:
+            config = self.config_space.sample_partial_configuration_with_default(history)
+        except Exception as e:
+            print(history)
+            raise e
+            #config = self.config_space.sample_partial_configuration(history)
         return config
 
     def next_moves(self, history=[], info_childs=[]):
         try:
-            while True:
-                config = self.config_space.sample_partial_configuration(history)
-                if self._valid_sample(history, config):
-                    break
-            moves_executed = set([el[0] for el in history])
-            full_config = set(config.keys())
-            possible_params = list(full_config - moves_executed)
+            #while True:
+            config = self.config_space.sample_partial_configuration_with_default(history)
+            #    if self._valid_sample(history, config):
+            #        break
+
+            possible_params = list(self.config_space.get_possible_next_params(history))
+            print(possible_params)
             if self.use_parameter_importance:
                 id_param = self.score_model.most_importance_parameter(
                     [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
@@ -80,18 +87,20 @@ class ConfigSpace_env():
                 id_param = np.random.randint(0, len(possible_params))
             next_param = possible_params[id_param]
 
+            next_param_cs = self.config_space._hyperparameters[next_param]
+            value_to_choose = []
+
+            for _ in range(100):
+                next_param_v = next_param_cs.sample(self.rng)
+                try:
+                    self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
+                    value_to_choose.append(next_param_v)
+                except Exception as e:
+                    pass
+
+            
+
             if self.use_rave:
-                next_param_cs = self.config_space._hyperparameters[next_param]
-                value_to_choose = []
-                while True:
-                    value_param = config[next_param]
-                    new_history = history + [(next_param, value_param)]
-                    new_config = self.config_space.sample_partial_configuration(new_history)
-                    if self._valid_sample(new_history, new_config):
-                        value_to_choose.append(value_param)
-                        if len(value_to_choose) > 10:
-                            break
-                value_to_choose = np.unique(value_to_choose)
                 idx_param = self.config_space.get_idx_by_hyperparameter_name(next_param)
                 if type(self.config_space._hyperparameters[next_param]) == CategoricalHyperparameter:
                     value_param = self.score_model.rave_value(
@@ -106,12 +115,7 @@ class ConfigSpace_env():
                                                               False,
                                                               None)
             else:
-                while True:
-                    value_param = config[next_param]
-                    new_history = history + [(next_param, value_param)]
-                    new_config = self.config_space.sample_partial_configuration(new_history)
-                    if self._valid_sample(new_history, new_config):
-                        break
+                value_param = np.random.choice(value_to_choose)
 
             history.append((next_param, value_param))
         except Timeout.Timeout as e:
