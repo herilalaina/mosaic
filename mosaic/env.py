@@ -22,7 +22,7 @@ class ConfigSpace_env():
                  seed = 1):
         """Constructor."""
         self.bestconfig = {
-            "cv_score": 0,
+            "validation_score": 0,
             "model": None
         }
         self.start_time = time.time()
@@ -48,7 +48,7 @@ class ConfigSpace_env():
               mem_in_mb=3024,
               cpu_time_in_s=30):
         self.bestconfig = {
-            "cv_score": 0,
+            "validation_score": 0,
             "model": None
         }
         self.start_time = time.time()
@@ -98,7 +98,7 @@ class ConfigSpace_env():
                 except Exception as e:
                     pass
 
-            
+
 
             if self.use_rave:
                 idx_param = self.config_space.get_idx_by_hyperparameter_name(next_param)
@@ -175,13 +175,12 @@ class ConfigSpace_env():
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
-        if default and res["validation_score"] != 0:
-            self.log_result(res["validation_score"], config)
+        self.log_result(res, config)
 
         """self.log_result(res, config)
 
         percentile = 1 - (1 / (self.sucess_run + 1))
-        index = get_index_percentile([r["cv_score"] for r in self.history_score], percentile)
+        index = get_index_percentile([r["validation_score"] for r in self.history_score], percentile)
         if self.history_score[index] != self.bestconfig["model"]:
             self.add_to_final_model(res, self.history_score[index])
             self.bestconfig = self.history_score[index]
@@ -213,16 +212,17 @@ class ConfigSpace_env():
     def add_to_final_model(self, config):
         self.final_model.append(config)
 
-    def log_result(self, score, config):
+    def log_result(self, res, config):
         run = {
             "running_time": time.time() - self.start_time,
-            "cv_score": score,
+            "validation_score": res["validation_score"],
+            "test_score": res["test_score"] if "test_score" in res else None,
             "model": config
         }
         self.history_score.append(run)
 
-        print(">> {0}: validation score: {1}\n".format(str(config), score))
+        print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
 
-        if score > self.bestconfig["cv_score"]:
+        if res["validation_score"] > self.bestconfig["validation_score"]:
             self.add_to_final_model(run)
             self.bestconfig = run
