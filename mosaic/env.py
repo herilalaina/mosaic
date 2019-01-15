@@ -4,12 +4,14 @@ import time
 import pynisher
 import numpy as np
 
+from mosaic.utils import expected_improvement
 from mosaic.model_score import ScoreModel
-from mosaic.utils import Timeout
+from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
 import traceback
 import logging
+
 
 
 class ConfigSpace_env():
@@ -20,16 +22,15 @@ class ConfigSpace_env():
                  mem_in_mb=3024,
                  cpu_time_in_s=30,
                  use_parameter_importance=True,
-                 use_rave=False):
+                 seed = 1):
         """Constructor."""
         self.bestconfig = {
-            "score_validation": 0,
+            "validation_score": 0,
             "model": None
         }
         self.start_time = time.time()
         self.config_space = config_space
         self.use_parameter_importance = use_parameter_importance
-        self.use_rave = use_rave
 
         # Constrained evaluation
         self.max_eval_time = cpu_time_in_s
@@ -40,12 +41,18 @@ class ConfigSpace_env():
         self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
         self.logger = logging.getLogger('mcts')
+        self.final_model = []
+
+        # statistics
+        self.sucess_run = 0
+        self.rng = np.random.RandomState(seed)
+
 
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
         self.bestconfig = {
-            "score_validation": 0,
+            "validation_score": 0,
             "model": None
         }
         self.start_time = time.time()
@@ -60,18 +67,19 @@ class ConfigSpace_env():
 
 
     def rollout(self, history=[]):
-        config = self.config_space.sample_partial_configuration(history)
+        try:
+            config = self.config_space.sample_partial_configuration_with_default(history)
+        except Exception as e:
+            print(history)
+            raise e
         return config
 
     def next_moves(self, history=[], info_childs=[]):
         try:
-            while True:
-                config = self.config_space.sample_partial_configuration(history)
-                if self._valid_sample(history, config):
-                    break
-            moves_executed = set([el[0] for el in history])
-            full_config = set(config.keys())
-            possible_params = list(full_config - moves_executed)
+            config = self.config_space.sample_partial_configuration_with_default(history)
+
+            possible_params = list(self.config_space.get_possible_next_params(history))
+            print(possible_params)
             if self.use_parameter_importance:
                 id_param = self.score_model.most_importance_parameter(
                     [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
@@ -79,38 +87,41 @@ class ConfigSpace_env():
                 id_param = np.random.randint(0, len(possible_params))
             next_param = possible_params[id_param]
 
-            if self.use_rave:
-                next_param_cs = self.config_space._hyperparameters[next_param]
-                value_to_choose = []
-                while True:
-                    value_param = config[next_param]
-                    new_history = history + [(next_param, value_param)]
-                    new_config = self.config_space.sample_partial_configuration(new_history)
-                    if self._valid_sample(new_history, new_config):
-                        value_to_choose.append(value_param)
-                        if len(value_to_choose) > 10:
-                            break
-                value_to_choose = np.unique(value_to_choose)
-                idx_param = self.config_space.get_idx_by_hyperparameter_name(next_param)
-                if type(self.config_space._hyperparameters[next_param]) == CategoricalHyperparameter:
-                    value_param = self.score_model.rave_value(
-                        [next_param_cs._inverse_transform(v) for v in value_to_choose],
-                        idx_param,
-                        True,
-                        self.config_space._hyperparameters[next_param].choices)
-                    value_param = next_param_cs._transform(value_param)
-                else:
-                    value_param = self.score_model.rave_value(value_to_choose,
-                                                              idx_param,
-                                                              False,
-                                                              None)
+            next_param_cs = self.config_space._hyperparameters[next_param]
+
+            value_to_choose = []
+            list_configuration_to_choose = []
+
+            for _ in range(10):
+                next_param_v = next_param_cs.sample(self.rng)
+                try:
+                    ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
+                    vect_config = np.nan_to_num(ex_config.get_array())
+                    if len(vect_config) == 172:
+                        value_to_choose.append(next_param_v)
+                        list_configuration_to_choose.append(vect_config)
+                except Exception as e:
+                    pass
+
+            if len(value_to_choose) != len(list_configuration_to_choose):
+                raise Exception("shape not the same")
+
+            if len(self.history_score) > 10:
+                try:
+                    mu, sigma = self.score_model.get_mu_sigma_from_rf(list_configuration_to_choose)
+                    ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+                    value_param = value_to_choose[np.argmax(ei_values)]
+                except Exception as e:
+                    print("ERROR =============================================")
+                    print(mu)
+                    print(sigma)
+                    print(ei_values)
+                    print(value_to_choose)
+                    print(np.shape(list_configuration_to_choose))
+                    value_param = np.random.choice(value_to_choose)
             else:
-                while True:
-                    value_param = config[next_param]
-                    new_history = history + [(next_param, value_param)]
-                    new_config = self.config_space.sample_partial_configuration(new_history)
-                    if self._valid_sample(new_history, new_config):
-                        break
+                value_param = np.random.choice(value_to_choose)
+
 
             history.append((next_param, value_param))
         except Timeout.Timeout as e:
@@ -155,6 +166,7 @@ class ConfigSpace_env():
             eval_func = self.eval_func
         try:
             res = eval_func(config, self.bestconfig)
+            self.sucess_run += 1
         except Timeout.Timeout as e:
             print("Timeout!!")
             self.logger.critical(e)
@@ -168,18 +180,22 @@ class ConfigSpace_env():
 
         if res is None:
             res = {"validation_score": 0, "model": None}
-        self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
-        if res["validation_score"] > self.bestconfig["score_validation"]:
-            self.log_result(res, config)
-            self.bestconfig = {
-                "score_validation": res["validation_score"],
-                "model": config
-            }
+        if res["validation_score"] > 0:
+            self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
+
+        self.log_result(res, config)
+
+        """self.log_result(res, config)
+
+        percentile = 1 - (1 / (self.sucess_run + 1))
+        index = get_index_percentile([r["validation_score"] for r in self.history_score], percentile)
+        if self.history_score[index] != self.bestconfig["model"]:
+            self.add_to_final_model(res, self.history_score[index])
+            self.bestconfig = self.history_score[index]
             print("!! {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
         else:
-            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
-            #print("Best validation score", res["validation_score"])
+            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))"""
 
         return res["validation_score"]
 
@@ -202,9 +218,20 @@ class ConfigSpace_env():
         rollout = self.rollout(history)
         return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
+    def add_to_final_model(self, config):
+        self.final_model.append(config)
+
     def log_result(self, res, config):
-        self.history_score.append({
+        run = {
             "running_time": time.time() - self.start_time,
-            "cv_score": res["validation_score"],
+            "validation_score": res["validation_score"],
+            "test_score": res["test_score"] if "test_score" in res else None,
             "model": config
-        })
+        }
+        self.history_score.append(run)
+
+        print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
+
+        if res["validation_score"] > self.bestconfig["validation_score"]:
+            self.add_to_final_model(run)
+            self.bestconfig = run

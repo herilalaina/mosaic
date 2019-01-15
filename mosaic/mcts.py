@@ -3,10 +3,12 @@
 import logging
 import gc
 import time
+import numpy as np
 
 from mosaic.strategy.policy import UCT, Besa
 from mosaic.node import Node
 from mosaic.utils import Timeout
+from mosaic.utils import get_index_percentile
 
 
 class MCTS():
@@ -87,6 +89,7 @@ class MCTS():
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
         return score
 
+
     def BACKUP(self, node, reward):
         """Back propagate reward."""
         for parent in self.tree.get_path_to_node(node_id=node, name=False):
@@ -100,10 +103,10 @@ class MCTS():
         self.env.run_default_configuration()
         #dump_cutoff = self.env.cpu_time_in_s
         #self.env.cpu_time_in_s = 10
-        [self.env.run_random_configuration() for i in range(50)]
+        # [self.env.run_random_configuration() for i in range(50)]
         #self.env.cpu_time_in_s = dump_cutoff
         if self.multi_fidelity:
-            self.env.cpu_time_in_s = 10
+            self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
         try:
             with Timeout(int(self.time_budget - (start_run - time.time()))):
                 for i in range(n):
