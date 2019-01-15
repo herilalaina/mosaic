@@ -8,7 +8,6 @@ from mosaic.utils import expected_improvement
 from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
-from ConfigSpace.hyperparameters import CategoricalHyperparameter
 import traceback
 import logging
 
@@ -185,17 +184,6 @@ class ConfigSpace_env():
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
         self.log_result(res, config)
-
-        """self.log_result(res, config)
-
-        percentile = 1 - (1 / (self.sucess_run + 1))
-        index = get_index_percentile([r["validation_score"] for r in self.history_score], percentile)
-        if self.history_score[index] != self.bestconfig["model"]:
-            self.add_to_final_model(res, self.history_score[index])
-            self.bestconfig = self.history_score[index]
-            print("!! {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
-        else:
-            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))"""
 
         return res["validation_score"]
 
