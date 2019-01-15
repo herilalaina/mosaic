@@ -84,22 +84,8 @@ class MCTS():
 
     def PLAYOUT(self, node_id):
         """Playout policy."""
-        """tried_config = []
-        list_score = []
-        for _ in range(5):
-            playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
-            if playout_node not in list_score:
-                score = self.policy.evaluate(self.env._evaluate, [playout_node])
-                tried_config.append(playout_node)
-                list_score.append(score)
-        index_median = get_index_percentile(list_score, 0.5)
-        self.env.log_result(list_score[index_median], tried_config[index_median])
-        self.logger.info("Playout\t param={0}\t score={1}".format(tried_config[index_median], list_score[index_median]))
-        return list_score[index_median]"""
-
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
-        self.env.log_result(score, playout_node)
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
         return score
 

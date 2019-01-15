@@ -25,6 +25,13 @@ class ScoreModel():
 
         self.nb_added = 0
 
+    def get_mu_sigma_from_rf(self, X):
+        list_pred = []
+        for estimator in self.model.estimators_:
+            x_pred = estimator.predict(X)
+            list_pred.append(x_pred)
+        return np.mean(list_pred, axis=1), np.std(list_pred, axis=1)
+
     def load_data(self):
         try:
             return pickle.load(open(self.path, "rb"))

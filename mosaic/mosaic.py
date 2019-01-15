@@ -13,14 +13,12 @@ class Search:
                  time_budget=3600,
                  multi_fidelity=False,
                  use_parameter_importance=False,
-                 use_rave=False,
                  seed = 1):
         env = ConfigSpace_env(eval_func,
                               config_space=config_space,
                               mem_in_mb=mem_in_mb,
                               cpu_time_in_s=cpu_time_in_s,
                               use_parameter_importance=use_parameter_importance,
-                              use_rave=use_rave,
                               seed=seed)
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
@@ -38,7 +36,6 @@ class Search:
         print("logfile = {0}".format(self.logger))
         print("Use multi-fidelity = {0}".format(self.mcts.multi_fidelity))
         print("Use parameter importance = {0}".format(self.mcts.env.use_parameter_importance))
-        print("Use RAVE = {0}".format(self.mcts.env.use_rave))
         print("Memory limit = {0} MB".format(self.mcts.env.mem_in_mb))
         print("Overall Time Budget = {0}".format(self.mcts.time_budget))
         print("Evaluation Time Limit = {0}".format(self.mcts.env.cpu_time_in_s))

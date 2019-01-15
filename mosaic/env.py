@@ -4,10 +4,12 @@ import time
 import pynisher
 import numpy as np
 
+from mosaic.utils import expected_improvement
 from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
+
 
 
 class ConfigSpace_env():
@@ -18,7 +20,6 @@ class ConfigSpace_env():
                  mem_in_mb=3024,
                  cpu_time_in_s=30,
                  use_parameter_importance=True,
-                 use_rave=False,
                  seed = 1):
         """Constructor."""
         self.bestconfig = {
@@ -28,7 +29,6 @@ class ConfigSpace_env():
         self.start_time = time.time()
         self.config_space = config_space
         self.use_parameter_importance = use_parameter_importance
-        self.use_rave = use_rave
 
         # Constrained evaluation
         self.max_eval_time = cpu_time_in_s
@@ -68,15 +68,11 @@ class ConfigSpace_env():
         except Exception as e:
             print(history)
             raise e
-            #config = self.config_space.sample_partial_configuration(history)
         return config
 
     def next_moves(self, history=[], info_childs=[]):
         try:
-            #while True:
             config = self.config_space.sample_partial_configuration_with_default(history)
-            #    if self._valid_sample(history, config):
-            #        break
 
             possible_params = list(self.config_space.get_possible_next_params(history))
             print(possible_params)
@@ -88,34 +84,40 @@ class ConfigSpace_env():
             next_param = possible_params[id_param]
 
             next_param_cs = self.config_space._hyperparameters[next_param]
-            value_to_choose = []
 
-            for _ in range(100):
+            value_to_choose = []
+            list_configuration_to_choose = []
+
+            for _ in range(10):
                 next_param_v = next_param_cs.sample(self.rng)
                 try:
-                    self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
-                    value_to_choose.append(next_param_v)
+                    ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
+                    vect_config = np.nan_to_num(ex_config.get_array())
+                    if len(vect_config) == 172:
+                        value_to_choose.append(next_param_v)
+                        list_configuration_to_choose.append(vect_config)
                 except Exception as e:
                     pass
 
+            if len(value_to_choose) != len(list_configuration_to_choose):
+                raise Exception("shape not the same")
 
-
-            if self.use_rave:
-                idx_param = self.config_space.get_idx_by_hyperparameter_name(next_param)
-                if type(self.config_space._hyperparameters[next_param]) == CategoricalHyperparameter:
-                    value_param = self.score_model.rave_value(
-                        [next_param_cs._inverse_transform(v) for v in value_to_choose],
-                        idx_param,
-                        True,
-                        self.config_space._hyperparameters[next_param].choices)
-                    value_param = next_param_cs._transform(value_param)
-                else:
-                    value_param = self.score_model.rave_value(value_to_choose,
-                                                              idx_param,
-                                                              False,
-                                                              None)
+            if len(self.history_score) > 10:
+                try:
+                    mu, sigma = self.score_model.get_mu_sigma_from_rf(list_configuration_to_choose)
+                    ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+                    value_param = value_to_choose[np.argmax(ei_values)]
+                except Exception as e:
+                    print("ERROR =============================================")
+                    print(mu)
+                    print(sigma)
+                    print(ei_values)
+                    print(value_to_choose)
+                    print(np.shape(list_configuration_to_choose))
+                    value_param = np.random.choice(value_to_choose)
             else:
                 value_param = np.random.choice(value_to_choose)
+
 
             history.append((next_param, value_param))
         except Timeout.Timeout as e:
