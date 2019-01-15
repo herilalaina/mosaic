@@ -8,6 +8,8 @@ from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
+import traceback
+import logging
 
 
 class ConfigSpace_env():
@@ -37,6 +39,7 @@ class ConfigSpace_env():
 
         self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
+        self.logger = logging.getLogger('mcts')
 
     def reset(self, eval_func,
               mem_in_mb=3024,
@@ -154,10 +157,13 @@ class ConfigSpace_env():
             res = eval_func(config, self.bestconfig)
         except Timeout.Timeout as e:
             print("Timeout!!")
+            self.logger.critical(e)
             raise (e)
         except Exception as e:
             print("Pynisher Error {0}. Config: {1}".format(e, config))
             res = {"validation_score": 0, "model": None}
+            traceback.print_exc()
+            self.logger.critical(e)
             raise e
 
         if res is None:
