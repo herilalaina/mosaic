@@ -15,7 +15,7 @@ class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="uct",
+                 policy="besa",
                  time_budget=3600,
                  multi_fidelity = False):
         self.env = env
@@ -87,6 +87,7 @@ class MCTS():
         playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
+        print("==> ", score)
         return score
 
 
@@ -123,3 +124,6 @@ class MCTS():
                     gc.collect()
         except Timeout.Timeout:
             return 0
+
+    def print_tree(self, images):
+        self.tree.draw_tree(images)

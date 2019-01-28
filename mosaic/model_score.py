@@ -25,12 +25,23 @@ class ScoreModel():
 
         self.nb_added = 0
 
+    def get_performance(self, x):
+        try:
+            list_pred = []
+            for estimator in self.model.estimators_:
+                x_pred = estimator.predict([x])
+                list_pred.append(x_pred[0])
+            return {"mean": np.mean(list_pred), "std": np.std(list_pred)}
+        except Exception as e:
+            print(e)
+            return {"mean": 0, "std": 0}
+
     def get_mu_sigma_from_rf(self, X):
         list_pred = []
         for estimator in self.model.estimators_:
             x_pred = estimator.predict(X)
             list_pred.append(x_pred)
-        return np.mean(list_pred, axis=1), np.std(list_pred, axis=1)
+        return np.mean(list_pred, axis=0), np.std(list_pred, axis=0)
 
     def load_data(self):
         try:

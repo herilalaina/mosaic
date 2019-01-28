@@ -44,6 +44,8 @@ class ConfigSpace_env():
         self.sucess_run = 0
         self.rng = np.random.RandomState(seed)
 
+        self.id = 0
+
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
@@ -88,27 +90,26 @@ class ConfigSpace_env():
             value_to_choose = []
             list_configuration_to_choose = []
 
-            for _ in range(10):
+            for _ in range(100):
                 next_param_v = next_param_cs.sample(self.rng)
                 try:
                     ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
                     vect_config = np.nan_to_num(ex_config.get_array())
-                    if len(vect_config) == 172:
+                    if len(vect_config) == 172 and next_param_v not in value_to_choose:
                         value_to_choose.append(next_param_v)
                         list_configuration_to_choose.append(vect_config)
                 except Exception as e:
                     pass
 
-            if len(value_to_choose) != len(list_configuration_to_choose):
-                raise Exception("shape not the same")
-
             if len(self.history_score) > 10:
+                mu, sigma = None, None
                 try:
-                    mu, sigma = self.score_model.get_mu_sigma_from_rf(list_configuration_to_choose)
+                    mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose))
                     ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
                     value_param = value_to_choose[np.argmax(ei_values)]
                 except Exception as e:
                     print("ERROR =============================================")
+                    print(e)
                     print(mu)
                     print(sigma)
                     print(ei_values)
@@ -156,6 +157,7 @@ class ConfigSpace_env():
         return preprocessed_moves
 
     def _evaluate(self, config, default=False):
+        start_time = time.time()
         if not default:
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         else:
@@ -163,32 +165,19 @@ class ConfigSpace_env():
         try:
             res = eval_func(config, self.bestconfig)
             self.sucess_run += 1
-        except Timeout.Timeout as e:
-            print("Timeout!!")
-            raise (e)
-        except Exception as e:
-            print("Pynisher Error {0}. Config: {1}".format(e, config))
-            res = {"validation_score": 0, "model": None}
-            raise e
+        except TimeoutException as e:
+            raise(e)
 
         if res is None:
-            res = {"validation_score": 0, "model": None}
+            res = {"validation_score": 0, "info": None}
+
+        res["running_time"] = time.time() - start_time
+        res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
 
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
 
         self.log_result(res, config)
-
-        """self.log_result(res, config)
-
-        percentile = 1 - (1 / (self.sucess_run + 1))
-        index = get_index_percentile([r["validation_score"] for r in self.history_score], percentile)
-        if self.history_score[index] != self.bestconfig["model"]:
-            self.add_to_final_model(res, self.history_score[index])
-            self.bestconfig = self.history_score[index]
-            print("!! {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
-        else:
-            print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))"""
 
         return res["validation_score"]
 
@@ -215,13 +204,13 @@ class ConfigSpace_env():
         self.final_model.append(config)
 
     def log_result(self, res, config):
-        run = {
-            "running_time": time.time() - self.start_time,
-            "validation_score": res["validation_score"],
-            "test_score": res["test_score"] if "test_score" in res else None,
-            "model": config
-        }
+        run = res
+        run["id"] = self.id
+        run["elapsed_time"] = time.time() - self.start_time
+        #run["model"] = config.get_dictionary()
+
         self.history_score.append(run)
+        self.id += 1
 
         print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
 

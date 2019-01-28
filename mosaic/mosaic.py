@@ -60,6 +60,9 @@ class Search:
     def get_history_run(self):
         return self.mcts.env.final_model
 
+    def get_full_history(self):
+        return self.mcts.env.final_model
+
     def test_performance(self, X_train, y_train, X_test, y_test, func_test, categorical_features):
         scores = []
         for r in self.mcts.env.final_model:
