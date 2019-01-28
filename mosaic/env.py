@@ -8,7 +8,8 @@ from mosaic.utils import expected_improvement
 from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
-from ConfigSpace.hyperparameters import CategoricalHyperparameter
+import traceback
+import logging
 
 
 
@@ -38,6 +39,7 @@ class ConfigSpace_env():
 
         self.score_model = ScoreModel(len(self.config_space._hyperparameters))
         self.history_score = []
+        self.logger = logging.getLogger('mcts')
         self.final_model = []
 
         # statistics
@@ -165,7 +167,9 @@ class ConfigSpace_env():
         try:
             res = eval_func(config, self.bestconfig)
             self.sucess_run += 1
+
         except TimeoutException as e:
+            self.logger.critical(e)
             raise(e)
 
         if res is None:
