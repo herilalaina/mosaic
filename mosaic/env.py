@@ -48,6 +48,10 @@ class ConfigSpace_env():
 
         self.id = 0
 
+        self.nb_exec_for_params = dict()
+        for p in self.config_space.get_hyperparameter_names():
+            self.nb_exec_for_params[p] = {"nb": 0, "ens": set()}
+
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
@@ -74,10 +78,16 @@ class ConfigSpace_env():
             raise e
         return config
 
+    def _has_multiple_value(self, p):
+        next_param_cs = self.config_space._hyperparameters[p]
+        ens_val = set()
+        for _ in range(5):
+            ens_val.add(next_param_cs.sample(self.rng))
+        return len(ens_val) > 1
 
     def _can_use_parameter_importance(self, list_params, threshold = 10):
         for p in list_params:
-            if sum([p in m["model"] for m in self.history_score]) < 5:
+            if self.nb_exec_for_params[p]["nb"] < 10 or (self._has_multiple_value(p) and len(self.nb_exec_for_params[p]["ens"]) == 1):
                 return False
         return True
 
@@ -87,7 +97,11 @@ class ConfigSpace_env():
 
             possible_params = list(self.config_space.get_possible_next_params(history))
             print(possible_params)
-            if self.use_parameter_importance and self._can_use_parameter_importance(possible_params):
+            if "classifier:__choice__" in possible_params:
+                id_param = possible_params.index("classifier:__choice__")
+            elif "categorical_encoding:__choice__" in possible_params:
+                id_param = possible_params.index("categorical_encoding:__choice__")
+            elif self.use_parameter_importance and self._can_use_parameter_importance(possible_params):
                 print("Parameter importance activated")
                 id_param = self.score_model.most_importance_parameter(
                     [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
@@ -111,7 +125,9 @@ class ConfigSpace_env():
                 except Exception as e:
                     pass
 
-            if len(self.history_score) > 10:
+            if next_param ==  "classifier:__choice__" and len(self.nb_exec_for_params[next_param]["ens"]) < 10:
+                value_param = np.random.choice(value_to_choose)
+            elif self.nb_exec_for_params[next_param]["nb"] > 10 and len(self.nb_exec_for_params[next_param]["ens"]) > 1:
                 mu, sigma = None, None
                 try:
                     mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose))
@@ -220,6 +236,9 @@ class ConfigSpace_env():
         run["id"] = self.id
         run["elapsed_time"] = time.time() - self.start_time
         run["model"] = config.get_dictionary()
+        for k, v in config.get_dictionary().items():
+            self.nb_exec_for_params[k]["nb"] = self.nb_exec_for_params[k]["nb"] + 1
+            self.nb_exec_for_params[k]["ens"].add(v)
 
         self.history_score.append(run)
         self.id += 1
