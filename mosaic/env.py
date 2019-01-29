@@ -74,13 +74,21 @@ class ConfigSpace_env():
             raise e
         return config
 
+
+    def _can_use_parameter_importance(self, list_params, threshold = 10):
+        for p in list_params:
+            if sum([p in m["model"] for m in self.history_score]) < 5:
+                return False
+        return True
+
     def next_moves(self, history=[], info_childs=[]):
         try:
             config = self.config_space.sample_partial_configuration_with_default(history)
 
             possible_params = list(self.config_space.get_possible_next_params(history))
             print(possible_params)
-            if self.use_parameter_importance:
+            if self.use_parameter_importance and self._can_use_parameter_importance(possible_params):
+                print("Parameter importance activated")
                 id_param = self.score_model.most_importance_parameter(
                     [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
             else:
@@ -163,7 +171,7 @@ class ConfigSpace_env():
         if not default:
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         else:
-            eval_func = self.eval_func
+            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.max_eval_time)(self.eval_func)
         try:
             res = eval_func(config, self.bestconfig)
             self.sucess_run += 1
@@ -211,7 +219,7 @@ class ConfigSpace_env():
         run = res
         run["id"] = self.id
         run["elapsed_time"] = time.time() - self.start_time
-        #run["model"] = config.get_dictionary()
+        run["model"] = config.get_dictionary()
 
         self.history_score.append(run)
         self.id += 1
