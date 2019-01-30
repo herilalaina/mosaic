@@ -19,10 +19,11 @@ class Search:
                               mem_in_mb=mem_in_mb,
                               cpu_time_in_s=cpu_time_in_s,
                               use_parameter_importance=use_parameter_importance,
+                              multi_objective=multi_fidelity,
                               seed=seed)
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
-                         multi_fidelity=multi_fidelity)
+                         multi_fidelity=False)
 
         # config logger
         self.logger = logging.getLogger('mcts')
@@ -34,7 +35,7 @@ class Search:
     def print_config(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print("logfile = {0}".format(self.logger))
-        print("Use multi-fidelity = {0}".format(self.mcts.multi_fidelity))
+        print("Use multi- = {0}".format(self.mcts.env.multi_objective))
         print("Use parameter importance = {0}".format(self.mcts.env.use_parameter_importance))
         print("Memory limit = {0} MB".format(self.mcts.env.mem_in_mb))
         print("Overall Time Budget = {0}".format(self.mcts.time_budget))

@@ -4,7 +4,7 @@ import time
 import pynisher
 import numpy as np
 
-from mosaic.utils import expected_improvement
+from mosaic.utils import expected_improvement, probability_improvement
 from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
@@ -21,6 +21,7 @@ class ConfigSpace_env():
                  mem_in_mb=3024,
                  cpu_time_in_s=30,
                  use_parameter_importance=True,
+                 multi_objective=False,
                  seed = 1):
         """Constructor."""
         self.bestconfig = {
@@ -30,6 +31,7 @@ class ConfigSpace_env():
         self.start_time = time.time()
         self.config_space = config_space
         self.use_parameter_importance = use_parameter_importance
+        self.multi_objective = multi_objective
 
         # Constrained evaluation
         self.max_eval_time = cpu_time_in_s
@@ -128,20 +130,27 @@ class ConfigSpace_env():
             if next_param ==  "classifier:__choice__" and len(self.nb_exec_for_params[next_param]["ens"]) < 10:
                 value_param = np.random.choice(value_to_choose)
             elif self.nb_exec_for_params[next_param]["nb"] > 10 and len(self.nb_exec_for_params[next_param]["ens"]) > 1:
-                mu, sigma = None, None
-                try:
-                    mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose))
-                    ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-                    value_param = value_to_choose[np.argmax(ei_values)]
-                except Exception as e:
-                    print("ERROR =============================================")
-                    print(e)
-                    print(mu)
-                    print(sigma)
-                    print(ei_values)
-                    print(value_to_choose)
-                    print(np.shape(list_configuration_to_choose))
-                    value_param = np.random.choice(value_to_choose)
+                if not self.multi_objective:
+                    mu, sigma = None, None
+                    try:
+                        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+                        ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+                        value_param = value_to_choose[np.argmax(ei_values)]
+                    except Exception as e:
+                        value_param = np.random.choice(value_to_choose)
+                else:
+                    try:
+                        mu_perf, sigma_perf = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+                        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+                        ei_values_perf = probability_improvement(mu_perf, sigma_perf, self.bestconfig["validation_score"])
+                        ei_values_time = probability_improvement(mu_time, sigma_time, self.bestconfig["running_time"], greater_is_better=False)
+                        print(ei_values_perf)
+                        print(ei_values_time)
+                        tau = (time.time() - self.start_time) / 3600.0
+                        ei_values = [np.sqrt((tau * ei_t)**2 + ((1-tau) * ei_p)**2) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
+                        value_param = value_to_choose[np.argmax(ei_values)]
+                    except Exception as e:
+                        value_param = np.random.choice(value_to_choose)
             else:
                 value_param = np.random.choice(value_to_choose)
 
@@ -203,7 +212,7 @@ class ConfigSpace_env():
         res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
 
         if res["validation_score"] > 0:
-            self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"])
+            self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"], res["running_time"])
 
         self.log_result(res, config)
 

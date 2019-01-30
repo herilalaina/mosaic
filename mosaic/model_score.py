@@ -8,6 +8,7 @@ import pickle, os
 class ScoreModel():
     def __init__(self, nb_param, X=None, y=None):
         self.model = RandomForestRegressor()
+        self.model_of_time = RandomForestRegressor()
         self.nb_param = nb_param
         self.path = path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
 
@@ -16,29 +17,43 @@ class ScoreModel():
             self.y = y
             self.model.fit(X, y)
         else:
-            X, y = self.load_data()
-            X = np.array(X)
-            y = np.array(y)
-            a = y != 0
-            self.X, self.y = X.tolist(), y.tolist()
-            self.X, self.y = [], []
+            X, y, y_time = self.load_data()
+            #X = np.array(X)
+            #y = np.array(y)
+            #y_time = np.array(y_time)
+            self.X, self.y, self.y_time = X, y, y_time
 
         self.nb_added = 0
 
     def get_performance(self, x):
+        output = {}
         try:
             list_pred = []
             for estimator in self.model.estimators_:
                 x_pred = estimator.predict([x])
                 list_pred.append(x_pred[0])
-            return {"mean": np.mean(list_pred), "std": np.std(list_pred)}
+            output = {"perf_mean": np.mean(list_pred), "perf_std": np.std(list_pred)}
         except Exception as e:
             print(e)
-            return {"mean": 0, "std": 0}
+            output = {"mean": 0, "std": 0}
 
-    def get_mu_sigma_from_rf(self, X):
+        try:
+            list_pred = []
+            for estimator in self.model_of_time.estimators_:
+                x_pred = estimator.predict([x])
+                list_pred.append(x_pred[0])
+            output["mean_runtime"] = np.mean(list_pred)
+            output["std_runtime"] = np.std(list_pred)
+        except Exception as e:
+            print(e)
+            output["mean_runtime"] = 0
+            output["std_runtime"] = 0
+
+        return output
+
+    def get_mu_sigma_from_rf(self, X, model):
         list_pred = []
-        for estimator in self.model.estimators_:
+        for estimator in model.estimators_:
             x_pred = estimator.predict(X)
             list_pred.append(x_pred)
         return np.mean(list_pred, axis=0), np.std(list_pred, axis=0)
@@ -47,21 +62,23 @@ class ScoreModel():
         try:
             return pickle.load(open(self.path, "rb"))
         except:
-            return [], []
+            return [], [], []
 
     def save_data(self):
         pickle.dump((self.X, self.y), open(self.path, "wb"))
 
-    def partial_fit(self, x, y):
+    def partial_fit(self, x, y, y_time):
         if y > 0:
             self.X.append(x)
             self.y.append(y)
+            self.y_time.append(y_time)
             self.fit()
             # elf.save_data()
             self.nb_added += 1
 
     def fit(self):
         self.model.fit(self.X, self.y)
+        self.model_of_time.fit(self.X, self.y_time)
 
     def importance_variable(self):
         if check_is_fitted(self.model):
