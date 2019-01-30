@@ -6,10 +6,11 @@ import pickle, os
 
 
 class ScoreModel():
-    def __init__(self, nb_param, X=None, y=None):
+    def __init__(self, nb_param, X=None, y=None, id_most_import_class = None):
         self.model = RandomForestRegressor()
         self.model_of_time = RandomForestRegressor()
         self.nb_param = nb_param
+        self.id_most_import_class = id_most_import_class
         self.path = path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
 
         if X is not None and y is not None:
@@ -77,8 +78,9 @@ class ScoreModel():
             self.nb_added += 1
 
     def fit(self):
-        self.model.fit(self.X, self.y)
-        self.model_of_time.fit(self.X, self.y_time)
+        sample_weight = self._get_sample_weight()
+        self.model.fit(self.X, self.y, sample_weight=sample_weight)
+        self.model_of_time.fit(self.X, self.y_time, sample_weight=sample_weight)
 
     def importance_variable(self):
         if check_is_fitted(self.model):
@@ -99,6 +101,17 @@ class ScoreModel():
             return np.random.choice(list(range(len(ids))), p=weights)
         else:
             return np.random.randint(len(ids))
+
+    def _get_sample_weight(self):
+        count_id = {}
+        for x in self.X:
+            x_ = x[self.id_most_import_class]
+            if x_ in count_id:
+                count_id[x_] = count_id[x_] + 1
+            else:
+                count_id[x_] = 1
+
+        return [(1.0 / count_id[x[self.id_most_import_class]]) for x in self.X]
 
     def rave_value(self, value, idx, is_categorical, range_value):
         #print(value)

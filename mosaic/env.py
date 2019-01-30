@@ -39,7 +39,8 @@ class ConfigSpace_env():
         self.mem_in_mb = mem_in_mb
         self.eval_func = eval_func
 
-        self.score_model = ScoreModel(len(self.config_space._hyperparameters))
+        self.score_model = ScoreModel(len(self.config_space._hyperparameters),
+                                        id_most_import_class=self.config_space.get_idx_by_hyperparameter_name("classifier:__choice__"))
         self.history_score = []
         self.logger = logging.getLogger('mcts')
         self.final_model = []
@@ -147,7 +148,7 @@ class ConfigSpace_env():
                         print(ei_values_perf)
                         print(ei_values_time)
                         tau = (time.time() - self.start_time) / 3600.0
-                        ei_values = [np.sqrt((tau * ei_t)**2 + ((1-tau) * ei_p)**2) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
+                        ei_values = [np.sqrt((tau * ei_p)**2 + ((1-tau) * ei_t)**2) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
                         value_param = value_to_choose[np.argmax(ei_values)]
                     except Exception as e:
                         value_param = np.random.choice(value_to_choose)
