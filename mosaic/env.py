@@ -100,7 +100,7 @@ class ConfigSpace_env():
 
     def rollout(self, history=[]):
         try:
-            config = self.config_space.sample_partial_configuration_with_default(history)
+            config = self.config_space.sample_partial_configuration(history)
         except Exception as e:
             print(history)
             raise e
@@ -144,7 +144,7 @@ class ConfigSpace_env():
             for _ in range(100):
                 try:
                     new_val = p_cs.sample(self.rng)
-                    self.config_space.sample_partial_configuration_with_default(history + [(p, new_val)])
+                    self.config_space.sample_partial_configuration(history + [(p, new_val)])
                     buffer.add(new_val)
                 except Exception as e:
                     pass
@@ -156,7 +156,7 @@ class ConfigSpace_env():
 
     def next_moves(self, history=[], info_childs=[]):
         try:
-            config = self.config_space.sample_partial_configuration_with_default(history)
+            config = self.config_space.sample_partial_configuration(history)
 
             possible_params_ = list(self.config_space.get_possible_next_params(history))
             possible_params = self.can_be_selectioned(possible_params_, [v[0] for v in info_childs], history)
@@ -182,13 +182,14 @@ class ConfigSpace_env():
                 next_param_v = next_param_cs.sample(self.rng)
                 if next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
                     try:
-                        ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
+                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)])
                         vect_config = np.nan_to_num(ex_config.get_array())
                         if next_param_v not in value_to_choose:
                             value_to_choose.append(next_param_v)
                             list_configuration_to_choose.append(vect_config)
                     except Exception as e:
-                        print("Error", next_param_v)
+                        #print("Error", next_param_v)
+                        pass
 
             if not self.multi_objective:
                 mu, sigma = None, None
@@ -216,7 +217,7 @@ class ConfigSpace_env():
                     #print(ei_values_time)
                     #tau = (time.time() - self.start_time) / 3600.0
                     #ei_values = [((1 - tau) * (ei_t)) + (tau * ei_p) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
-                    ei_values = [ei if mu_t < self.cpu_time_in_s else -1000 for ei, mu_t in zip(ei_values_perf, mu_time)]
+                    ei_values = [ei for ei, mu_t in zip(ei_values_perf, mu_time)  if mu_t < self.max_eval_time]
                     if sum(ei_values) == -1000 * len(ei_values):
                         ei_values = ei_values_perf
                     value_param = value_to_choose[np.argmax(ei_values)]
@@ -224,6 +225,7 @@ class ConfigSpace_env():
                     #print("choosed", np.argmax(ei_values))
                 except Exception as e:
                     print("error in ei")
+                    raise(e)
                     value_param = np.random.choice(value_to_choose)
 
 
@@ -301,12 +303,14 @@ class ConfigSpace_env():
         return res["validation_score"]
 
     def run_default_configuration(self):
+        print("Run default configuration")
         try:
             self._evaluate(self.config_space.get_default_configuration(), default=True)
         except Exception as e:
             raise(e)
 
     def run_main_configuration(self):
+        print("Run main configuration")
         for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
             try:
                 config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
@@ -315,16 +319,18 @@ class ConfigSpace_env():
                 print("Error when executing ", cl)
 
     def run_random_configuration(self):
+        print("Run random configuration")
         try:
             self._evaluate(self.config_space.sample_configuration())
         except:
             pass
 
     def run_initial_configuration(self, intial_configuration):
+        print("Run initial configuration")
         for c in intial_configuration:
             try:
-                self.env._evaluate(c)
-            except:
+                self._evaluate(c)
+            except Exception as e:
                 pass
 
     def _get_nb_choice_for_each_parameter(self):

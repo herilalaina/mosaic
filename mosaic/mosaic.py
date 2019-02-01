@@ -42,9 +42,9 @@ class Search:
         print("Evaluation Time Limit = {0}".format(self.mcts.env.cpu_time_in_s))
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-    def run(self, nb_simulation = 1, generate_image_path = ""):
+    def run(self, nb_simulation = 1, generate_image_path = "", intial_configuration=[]):
         self.print_config()
-        self.mcts.run(nb_simulation, generate_image_path)
+        self.mcts.run(nb_simulation, intial_configuration, generate_image_path)
         return self.mcts.env.bestconfig
 
     def run_warmstrat(self, eval_func,

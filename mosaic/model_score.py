@@ -11,7 +11,6 @@ class ScoreModel():
         self.model_of_time = RandomForestRegressor()
         self.nb_param = nb_param
         self.id_most_import_class = id_most_import_class
-        self.dataset_featues = []
         self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
 
         if X is not None and y is not None:
@@ -33,7 +32,7 @@ class ScoreModel():
         try:
             list_pred = []
             for estimator in self.model.estimators_:
-                x_pred = estimator.predict([x + self.dataset_featues])
+                x_pred = estimator.predict([x])
                 list_pred.append(x_pred[0])
             output = {"perf_mean": np.mean(list_pred), "perf_std": np.std(list_pred)}
         except Exception as e:
@@ -43,7 +42,7 @@ class ScoreModel():
         try:
             list_pred = []
             for estimator in self.model_of_time.estimators_:
-                x_pred = estimator.predict([x  + self.dataset_featues])
+                x_pred = estimator.predict([x])
                 list_pred.append(x_pred[0])
             output["mean_runtime"] = np.mean(list_pred)
             output["std_runtime"] = np.std(list_pred)
@@ -57,7 +56,7 @@ class ScoreModel():
     def get_mu_sigma_from_rf(self, X, model):
         list_pred = []
         for estimator in model.estimators_:
-            x_pred = estimator.predict([x + self.dataset_featues for x in X])
+            x_pred = estimator.predict(X)
             list_pred.append(x_pred)
         return np.mean(list_pred, axis=0), np.std(list_pred, axis=0)
 
@@ -72,7 +71,7 @@ class ScoreModel():
 
     def partial_fit(self, x, y, y_time):
         if y > 0:
-            self.X.append(x + self.dataset_featues)
+            self.X.append(x)
             self.y.append(y)
             self.y_time.append(y_time)
             self.fit()
