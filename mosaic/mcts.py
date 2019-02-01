@@ -99,13 +99,17 @@ class MCTS():
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
 
-    def run(self, n = 1, generate_image_path = ""):
+    def run(self, n = 1, intial_configuration = [], generate_image_path = ""):
         start_run = time.time()
         self.env.run_default_configuration()
+        for c in intial_configuration:
+            self.env._evaluate(c)
+
         #dump_cutoff = self.env.cpu_time_in_s
         #self.env.cpu_time_in_s = 10
         # [self.env.run_random_configuration() for i in range(50)]
         #self.env.cpu_time_in_s = dump_cutoff
+
         if self.multi_fidelity:
             self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
         try:
