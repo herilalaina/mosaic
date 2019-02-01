@@ -13,6 +13,7 @@ class Search:
                  time_budget=3600,
                  multi_fidelity=False,
                  use_parameter_importance=False,
+                 problem_features = [],
                  seed = 1):
         env = ConfigSpace_env(eval_func,
                               config_space=config_space,
@@ -21,6 +22,7 @@ class Search:
                               use_parameter_importance=use_parameter_importance,
                               multi_objective=multi_fidelity,
                               seed=seed)
+        env.score_model.dataset_features = problem_features
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
                          multi_fidelity=False)
@@ -31,6 +33,7 @@ class Search:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
+        self.problem_features = problem_features
 
     def print_config(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")

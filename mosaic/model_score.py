@@ -12,6 +12,7 @@ class ScoreModel():
         self.nb_param = nb_param
         self.id_most_import_class = id_most_import_class
         self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
+        self.dataset_features = dataset_features
 
         if X is not None and y is not None:
             self.X = X
@@ -23,6 +24,16 @@ class ScoreModel():
 
         self.nb_added = 0
 
+    def _normalize_x_with_features(self, x):
+        if len(self.dataset_features) > 0:
+            return x + self.dataset_features
+        return x
+
+    def _normalize_X_with_features(self, X):
+        if len(self.dataset_features) > 0:
+            return [self._normalize_x_with_features(x) for x in X]
+        return X
+
     def feed_model(self, X, y, y_time):
         self.X, self.y, self.y_time = X, y, y_time
         self.fit()
@@ -32,7 +43,7 @@ class ScoreModel():
         try:
             list_pred = []
             for estimator in self.model.estimators_:
-                x_pred = estimator.predict([x])
+                x_pred = estimator.predict([self._normalize_x_with_features(x)])
                 list_pred.append(x_pred[0])
             output = {"perf_mean": np.mean(list_pred), "perf_std": np.std(list_pred)}
         except Exception as e:
@@ -42,7 +53,7 @@ class ScoreModel():
         try:
             list_pred = []
             for estimator in self.model_of_time.estimators_:
-                x_pred = estimator.predict([x])
+                x_pred = estimator.predict([self._normalize_x_with_features(x)])
                 list_pred.append(x_pred[0])
             output["mean_runtime"] = np.mean(list_pred)
             output["std_runtime"] = np.std(list_pred)
@@ -56,7 +67,7 @@ class ScoreModel():
     def get_mu_sigma_from_rf(self, X, model):
         list_pred = []
         for estimator in model.estimators_:
-            x_pred = estimator.predict(X)
+            x_pred = estimator.predict(self._normalize_X_with_features(X))
             list_pred.append(x_pred)
         return np.mean(list_pred, axis=0), np.std(list_pred, axis=0)
 
@@ -71,7 +82,7 @@ class ScoreModel():
 
     def partial_fit(self, x, y, y_time):
         if y > 0:
-            self.X.append(x)
+            self.X.append(self._normalize_x_with_features(x))
             self.y.append(y)
             self.y_time.append(y_time)
             self.fit()
