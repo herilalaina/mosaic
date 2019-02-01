@@ -44,9 +44,17 @@ class Node():
         if not has_next_parameter:
             return True
 
+        current_node = self.get_info_node(node_id)
+        if current_node["name"].startswith("classifier:__choice__"):
+            max_number_of_child = env.max_nb_child_main_parameter[current_node["name"] + ":" + current_node["value"]]
+        elif current_node["name"] in env.max_nb_child_main_parameter:
+            max_number_of_child = env.max_nb_child_main_parameter[current_node["name"]]
+        else:
+            max_number_of_child = 20
+
         nb_current_childs = len(list(self.tree.successors(node_id)))
         nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), 0.5))
-        if nb_current_childs >= nb_child_allowed:
+        if nb_current_childs >= min(nb_child_allowed, max_number_of_child):
             return True
 
         return False

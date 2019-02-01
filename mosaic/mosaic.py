@@ -35,7 +35,7 @@ class Search:
     def print_config(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print("logfile = {0}".format(self.logger))
-        print("Use multi- = {0}".format(self.mcts.env.multi_objective))
+        print("Use multi fidelity = {0}".format(self.mcts.env.multi_objective))
         print("Use parameter importance = {0}".format(self.mcts.env.use_parameter_importance))
         print("Memory limit = {0} MB".format(self.mcts.env.mem_in_mb))
         print("Overall Time Budget = {0}".format(self.mcts.time_budget))

@@ -102,6 +102,7 @@ class MCTS():
     def run(self, n = 1, generate_image_path = ""):
         start_run = time.time()
         self.env.run_default_configuration()
+        self.env.run_main_configuration()
         #dump_cutoff = self.env.cpu_time_in_s
         #self.env.cpu_time_in_s = 10
         # [self.env.run_random_configuration() for i in range(50)]

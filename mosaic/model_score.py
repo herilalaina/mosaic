@@ -105,13 +105,18 @@ class ScoreModel():
     def _get_sample_weight(self):
         count_id = {}
         for x in self.X:
-            x_ = x[self.id_most_import_class]
+            x_ = tuple(x[i] for i in self.id_most_import_class)
             if x_ in count_id:
                 count_id[x_] = count_id[x_] + 1
             else:
                 count_id[x_] = 1
 
-        return [(1.0 / count_id[x[self.id_most_import_class]]) for x in self.X]
+        sample_weight = []
+        for x in self.X:
+            x_ = tuple(x[i] for i in self.id_most_import_class)
+            sample_weight.append((1.0 / count_id[x_]))
+
+        return sample_weight
 
     def rave_value(self, value, idx, is_categorical, range_value):
         #print(value)

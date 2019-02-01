@@ -3,10 +3,13 @@
 import time
 import pynisher
 import numpy as np
+import pickle as pkl
 
 from mosaic.utils import expected_improvement, probability_improvement
 from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
+
+from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
 
 import traceback
 import logging
@@ -40,7 +43,7 @@ class ConfigSpace_env():
         self.eval_func = eval_func
 
         self.score_model = ScoreModel(len(self.config_space._hyperparameters),
-                                        id_most_import_class=self.config_space.get_idx_by_hyperparameter_name("classifier:__choice__"))
+                                        id_most_import_class=[self.config_space.get_idx_by_hyperparameter_name(p) for p in ["categorical_encoding:__choice__", "classifier:__choice__"]])
         self.history_score = []
         self.logger = logging.getLogger('mcts')
         self.final_model = []
@@ -50,6 +53,28 @@ class ConfigSpace_env():
         self.rng = np.random.RandomState(seed)
 
         self.id = 0
+        self.main_hyperparameter = ["classifier:__choice__", "preprocessor:__choice__", "categorical_encoding"]
+        self.max_nb_child_main_parameter = {
+            "root": 16,
+            "classifier:__choice__:adaboost": 10,
+            "classifier:__choice__:bernoulli_nb": 13,
+            "classifier:__choice__:decision_tree": 10,
+            "classifier:__choice__:extra_trees": 10,
+            "classifier:__choice__:gaussian_nb": 10,
+            "classifier:__choice__:gradient_boosting": 10,
+            "classifier:__choice__:k_nearest_neighbors": 10,
+            "classifier:__choice__:lda": 12,
+            "classifier:__choice__:liblinear_svc": 13,
+            "classifier:__choice__:libsvm_svc": 10,
+            "classifier:__choice__:multinomial_nb": 8,
+            "classifier:__choice__:passive_aggressive": 13,
+            "classifier:__choice__:qda": 12,
+            "classifier:__choice__:random_forest": 10,
+            "classifier:__choice__:sgd": 13,
+            "classifier:__choice__:xgradient_boosting": 10,
+            "preprocessor:__choice__": 2
+        }
+        self.nb_choice_hyp = self._get_nb_choice_for_each_parameter()
 
         self.nb_exec_for_params = dict()
         for p in self.config_space.get_hyperparameter_names():
@@ -94,20 +119,56 @@ class ConfigSpace_env():
                 return False
         return True
 
+    def importance_surgate(self, param, history):
+        list_configuration_to_choose = []
+        value_to_choose = set()
+        next_param_cs = self.config_space._hyperparameters[param]
+        for _ in range(1000):
+            next_param_v = next_param_cs.sample(self.rng)
+            try:
+                ex_config = self.config_space.sample_partial_configuration(history + [(param, next_param_v)])
+                vect_config = np.nan_to_num(ex_config.get_array())
+                if len(vect_config) == 172 and next_param_v not in value_to_choose:
+                    list_configuration_to_choose.append(vect_config)
+                    value_to_choose.append(next_param_v)
+            except Exception as e:
+                pass
+        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+        return np.mean(mu)
+
+    def can_be_selectioned(self, possible_params, child_info, history):
+        final_available_param = []
+        for p in possible_params:
+            buffer = set()
+            p_cs = self.config_space.get_hyperparameter(p)
+            for _ in range(100):
+                try:
+                    new_val = p_cs.sample(self.rng)
+                    self.config_space.sample_partial_configuration_with_default(history + [(p, new_val)])
+                    buffer.add(new_val)
+                except Exception as e:
+                    pass
+
+            if len([param for param in child_info if param == p]) < len(buffer):
+                final_available_param.append(p)
+        return final_available_param
+
+
     def next_moves(self, history=[], info_childs=[]):
         try:
             config = self.config_space.sample_partial_configuration_with_default(history)
 
-            possible_params = list(self.config_space.get_possible_next_params(history))
-            print(possible_params)
-            if "classifier:__choice__" in possible_params:
-                id_param = possible_params.index("classifier:__choice__")
-            elif "categorical_encoding:__choice__" in possible_params:
-                id_param = possible_params.index("categorical_encoding:__choice__")
+            possible_params_ = list(self.config_space.get_possible_next_params(history))
+            possible_params = self.can_be_selectioned(possible_params_, [v[0] for v in info_childs], history)
+
+            if set(self.main_hyperparameter).intersection(set(possible_params)):
+                for main_p in self.main_hyperparameter:
+                    if main_p in possible_params:
+                        id_param = possible_params.index(main_p)
+                        break
             elif self.use_parameter_importance and self._can_use_parameter_importance(possible_params):
                 print("Parameter importance activated")
-                id_param = self.score_model.most_importance_parameter(
-                    [self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
+                id_param = self.score_model.most_importance_parameter([self.config_space.get_idx_by_hyperparameter_name(p) for p in possible_params])
             else:
                 id_param = np.random.randint(0, len(possible_params))
             next_param = possible_params[id_param]
@@ -119,41 +180,51 @@ class ConfigSpace_env():
 
             for _ in range(100):
                 next_param_v = next_param_cs.sample(self.rng)
-                try:
-                    ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
-                    vect_config = np.nan_to_num(ex_config.get_array())
-                    if len(vect_config) == 172 and next_param_v not in value_to_choose:
-                        value_to_choose.append(next_param_v)
-                        list_configuration_to_choose.append(vect_config)
-                except Exception as e:
-                    pass
+                if next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
+                    try:
+                        ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
+                        vect_config = np.nan_to_num(ex_config.get_array())
+                        if next_param_v not in value_to_choose:
+                            value_to_choose.append(next_param_v)
+                            list_configuration_to_choose.append(vect_config)
+                    except Exception as e:
+                        print("Error", next_param_v)
 
-            if next_param ==  "classifier:__choice__" and len(self.nb_exec_for_params[next_param]["ens"]) < 10:
-                value_param = np.random.choice(value_to_choose)
-            elif self.nb_exec_for_params[next_param]["nb"] > 10 and len(self.nb_exec_for_params[next_param]["ens"]) > 1:
-                if not self.multi_objective:
-                    mu, sigma = None, None
-                    try:
-                        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
-                        ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-                        value_param = value_to_choose[np.argmax(ei_values)]
-                    except Exception as e:
-                        value_param = np.random.choice(value_to_choose)
-                else:
-                    try:
-                        mu_perf, sigma_perf = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
-                        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
-                        ei_values_perf = probability_improvement(mu_perf, sigma_perf, self.bestconfig["validation_score"])
-                        ei_values_time = probability_improvement(mu_time, sigma_time, self.bestconfig["running_time"], greater_is_better=False)
-                        print(ei_values_perf)
-                        print(ei_values_time)
-                        tau = (time.time() - self.start_time) / 3600.0
-                        ei_values = [np.sqrt((tau * ei_p)**2 + ((1-tau) * ei_t)**2) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
-                        value_param = value_to_choose[np.argmax(ei_values)]
-                    except Exception as e:
-                        value_param = np.random.choice(value_to_choose)
+            if not self.multi_objective:
+                mu, sigma = None, None
+                try:
+                    mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+                    ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+                    value_param = value_to_choose[np.argmax(ei_values)]
+                except Exception as e:
+                    value_param = np.random.choice(value_to_choose)
             else:
-                value_param = np.random.choice(value_to_choose)
+                try:
+                    mu_perf, sigma_perf = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+                    mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+                    ei_values_perf = probability_improvement(mu_perf, sigma_perf, self.bestconfig["validation_score"])
+                    ei_values_time = probability_improvement(mu_time, sigma_time, self.bestconfig["running_time"], greater_is_better=False)
+                    #print(next_param)
+                    #print(value_to_choose)
+                    #print("Best perf", self.bestconfig["validation_score"])
+                    #print("mu perf", mu_perf)
+                    #print("sigma perf", sigma_perf)
+                    #print("Best time", self.bestconfig["running_time"])
+                    #print("mu time", mu_time)
+                    #print("sigma time", sigma_time)
+                    #print(ei_values_perf)
+                    #print(ei_values_time)
+                    #tau = (time.time() - self.start_time) / 3600.0
+                    #ei_values = [((1 - tau) * (ei_t)) + (tau * ei_p) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
+                    ei_values = [ei if mu_t < self.cpu_time_in_s else -1000 for ei, mu_t in zip(ei_values_perf, mu_time)]
+                    if sum(ei_values) == -1000 * len(ei_values):
+                        ei_values = ei_values_perf
+                    value_param = value_to_choose[np.argmax(ei_values)]
+                    #print("tau", tau)
+                    #print("choosed", np.argmax(ei_values))
+                except Exception as e:
+                    print("error in ei")
+                    value_param = np.random.choice(value_to_choose)
 
 
             history.append((next_param, value_param))
@@ -161,7 +232,15 @@ class ConfigSpace_env():
             raise (e)
         except Exception as e:
             print("Exception for {0}".format(history))
+            print("Child info", info_childs)
+            print("Possible params", possible_params)
+            print("Next params", next_param)
+            print("Value to choose", value_to_choose)
+            print("Value example: ", next_param_v)
             raise (e)
+
+        print("Possible params", possible_params)
+        print("Next params", (next_param, value_param))
         is_terminal = not self._check_if_same_pipeline([el[0] for el in history], [el for el in config])
         return next_param, value_param, is_terminal
 
@@ -195,7 +274,7 @@ class ConfigSpace_env():
     def _evaluate(self, config, default=False):
         start_time = time.time()
         if not default:
-            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
+            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.max_eval_time)(self.eval_func)
         else:
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.max_eval_time)(self.eval_func)
         try:
@@ -214,6 +293,8 @@ class ConfigSpace_env():
 
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"], res["running_time"])
+        else:
+            self.score_model.partial_fit(np.nan_to_num(config.get_array()), -1, 3000)
 
         self.log_result(res, config)
 
@@ -222,14 +303,37 @@ class ConfigSpace_env():
     def run_default_configuration(self):
         try:
             self._evaluate(self.config_space.get_default_configuration(), default=True)
-        except:
-            pass
+        except Exception as e:
+            raise(e)
+
+    def run_main_configuration(self):
+        for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
+            try:
+                config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
+                self._evaluate(config)
+            except Exception as e:
+                print("Error when executing ", cl)
 
     def run_random_configuration(self):
         try:
             self._evaluate(self.config_space.sample_configuration())
         except:
             pass
+
+    def _get_nb_choice_for_each_parameter(self):
+        count_dict = {}
+        for hyp in self.config_space.get_hyperparameter_names():
+            hyp_cs = self.config_space.get_hyperparameter(hyp)
+            if isinstance(hyp_cs, CategoricalHyperparameter):
+                count_dict[hyp] = len(hyp_cs.choices)
+            elif isinstance(hyp_cs, IntegerHyperparameter):
+                buffer = set()
+                for _ in range(100):
+                    buffer.add(hyp_cs.sample(self.rng))
+                count_dict[hyp] = len(buffer)
+            else:
+                count_dict[hyp] = 100
+        return count_dict
 
     def _check_if_same_pipeline(self, pip1, pip2):
         return set(pip1) != set(pip2)
