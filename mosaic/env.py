@@ -320,6 +320,13 @@ class ConfigSpace_env():
         except:
             pass
 
+    def run_initial_configuration(self, intial_configuration):
+        for c in intial_configuration:
+            try:
+                self.env._evaluate(c)
+            except:
+                pass
+
     def _get_nb_choice_for_each_parameter(self):
         count_dict = {}
         for hyp in self.config_space.get_hyperparameter_names():
