@@ -77,8 +77,10 @@ class ScoreModel():
         except:
             return [], [], []
 
-    def save_data(self):
-        pickle.dump((self.X, self.y), open(self.path, "wb"))
+    def save_data(self, file_dir):
+        np.save(os.path.join(file_dir, "X.npy"), self.X)
+        np.save(os.path.join(file_dir, "y.npy"), self.y)
+        np.save(os.path.join(file_dir, "y_time.npy"), self.y_time)
 
     def partial_fit(self, x, y, y_time):
         if y > 0:
@@ -86,7 +88,6 @@ class ScoreModel():
             self.y.append(y)
             self.y_time.append(y_time)
             self.fit()
-            # elf.save_data()
             self.nb_added += 1
 
     def fit(self):
