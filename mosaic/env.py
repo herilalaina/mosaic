@@ -80,6 +80,8 @@ class ConfigSpace_env():
         for p in self.config_space.get_hyperparameter_names():
             self.nb_exec_for_params[p] = {"nb": 0, "ens": set()}
 
+        self.current_rollout = None
+
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
@@ -96,15 +98,42 @@ class ConfigSpace_env():
         self.eval_func = eval_func
 
         self.history_score = []
+        self.current_rollout = None
+
+    def rollout(self, history = []):
+        while True:
+            try:
+                return self.config_space.sample_partial_configuration_with_default(history)
+            except Exception as e:
+                pass
 
 
-    def rollout(self, history=[]):
-        try:
-            config = self.config_space.sample_partial_configuration(history)
-        except Exception as e:
-            print(history)
-            raise e
-        return config
+    def rollout_with_model_performance(self, history=[]):
+        if self.current_rollout is not None:
+            config = self.current_rollout
+            self.current_rollout = None
+            return config
+
+        value_to_choose = []
+        list_configuration_to_choose = []
+        list_rollout = []
+        print("Calculate best rollout ...")
+        for _ in range(50):
+            try:
+                config = self.config_space.sample_partial_configuration_with_default(history)
+                vect_config = np.nan_to_num(config.get_array())
+                list_configuration_to_choose.append(vect_config)
+                list_rollout.append(config)
+            except Exception as e:
+                pass
+        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+        ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+        if self.multi_objective:
+            mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+            ei_values = [ei if mu_t < (self.max_eval_time - 60) else -1000 for ei, mu_t in zip(ei_values_perf, mu_time)]
+
+        id_max = np.argmax(ei_values)
+        return list_rollout[id_max]
 
     def _has_multiple_value(self, p):
         next_param_cs = self.config_space._hyperparameters[p]
@@ -154,7 +183,9 @@ class ConfigSpace_env():
         return final_available_param
 
 
+
     def next_moves(self, history=[], info_childs=[]):
+        self.current_rollout = None
         try:
             config = self.config_space.sample_partial_configuration(history)
 
@@ -177,61 +208,38 @@ class ConfigSpace_env():
 
             value_to_choose = []
             list_configuration_to_choose = []
+            list_rollout = []
 
-            for _ in range(100):
+            for _ in range(1000):
                 next_param_v = next_param_cs.sample(self.rng)
                 if next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
                     try:
-                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)])
+                        ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
                         vect_config = np.nan_to_num(ex_config.get_array())
                         if next_param_v not in value_to_choose:
                             value_to_choose.append(next_param_v)
                             list_configuration_to_choose.append(vect_config)
+                            list_rollout.append(ex_config)
                     except Exception as e:
-                        #print("Error", next_param_v)
+                        print("Error", next_param_v)
                         pass
 
-            if not self.multi_objective:
-                mu, sigma = None, None
-                try:
-                    mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
-                    ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-                    value_param = value_to_choose[np.argmax(ei_values)]
-                except Exception as e:
-                    value_param = np.random.choice(value_to_choose)
-            else:
-                try:
-                    mu_perf, sigma_perf = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+            try:
+                mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+                ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+                if self.multi_objective:
                     mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
-                    ei_values_perf = probability_improvement(mu_perf, sigma_perf, self.bestconfig["validation_score"])
-                    ei_values_time = probability_improvement(mu_time, sigma_time, self.bestconfig["running_time"], greater_is_better=False)
-                    #print(next_param)
-                    #print(value_to_choose)
-                    #print("Best perf", self.bestconfig["validation_score"])
-                    #print("mu perf", mu_perf)
-                    #print("sigma perf", sigma_perf)
-                    #print("Best time", self.bestconfig["running_time"])
-                    #print("mu time", mu_time)
-                    #print("sigma time", sigma_time)
-                    #print(ei_values_perf)
-                    #print(ei_values_time)
-                    #tau = (time.time() - self.start_time) / 3600.0
-                    #ei_values = [((1 - tau) * (ei_t)) + (tau * ei_p) for ei_t, ei_p in zip(ei_values_time, ei_values_perf)]
-                    ei_values = [ei for ei, mu_t in zip(ei_values_perf, mu_time)  if mu_t < self.max_eval_time]
-                    if sum(ei_values) == -1000 * len(ei_values):
-                        ei_values = ei_values_perf
-                    value_param = value_to_choose[np.argmax(ei_values)]
-                    #print("tau", tau)
-                    #print("choosed", np.argmax(ei_values))
-                except Exception as e:
-                    print("error in ei")
-                    raise(e)
-                    value_param = np.random.choice(value_to_choose)
+                    ei_values = [ei if mu_t < (self.cpu_time_in_s - 2) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
 
+                id_max = np.argmax(ei_values)
+                value_param = value_to_choose[id_max]
+                self.current_rollout = list_rollout[id_max]
+            except Exception as e:
+                print("error in ei")
+                raise(e)
+                value_param = np.random.choice(value_to_choose)
 
             history.append((next_param, value_param))
-        except Timeout.Timeout as e:
-            raise (e)
         except Exception as e:
             print("Exception for {0}".format(history))
             print("Child info", info_childs)
@@ -276,7 +284,7 @@ class ConfigSpace_env():
     def _evaluate(self, config, default=False):
         start_time = time.time()
         if not default:
-            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.max_eval_time)(self.eval_func)
+            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         else:
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.max_eval_time)(self.eval_func)
         try:

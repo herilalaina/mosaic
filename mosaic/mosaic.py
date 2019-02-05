@@ -25,7 +25,7 @@ class Search:
         env.score_model.dataset_features = problem_features
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
-                         multi_fidelity=False)
+                         multi_fidelity=multi_fidelity)
 
         # config logger
         self.logger = logging.getLogger('mcts')

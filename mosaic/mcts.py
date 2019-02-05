@@ -76,8 +76,8 @@ class MCTS():
     def EXPAND(self, node):
         """Expand child node."""
         name, value, terminal = self.policy.expansion(self.env.next_moves,
-                                                      [self.tree.get_path_to_node(node),
-                                                       self.tree.get_childs(node, info = ["name", "value"])])
+                                                              [self.tree.get_path_to_node(node),
+                                                               self.tree.get_childs(node, info = ["name", "value"])])
         id = self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
         self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(id, name, value, terminal))
         return id
