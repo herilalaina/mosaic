@@ -75,19 +75,26 @@ class MCTS():
 
     def EXPAND(self, node):
         """Expand child node."""
+        st_time=time.time()
         name, value, terminal = self.policy.expansion(self.env.next_moves,
                                                               [self.tree.get_path_to_node(node),
                                                                self.tree.get_childs(node, info = ["name", "value"])])
         id = self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
+        print("Expand: ", time.time() - st_time, " sec")
         self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(id, name, value, terminal))
         return id
 
     def PLAYOUT(self, node_id):
         """Playout policy."""
-        playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
+
+        st_time = time.time()
+        playout_node = self.env.rollout_with_model_performance(self.tree.get_path_to_node(node_id))
+        print("Playout: ", time.time() - st_time, " sec")
+
+        st_time = time.time()
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
+        print("Evaluate: ", time.time() - st_time, " sec")
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
-        print("==> ", score)
         return score
 
 
@@ -102,7 +109,9 @@ class MCTS():
     def run(self, n = 1, intial_configuration = [], generate_image_path = ""):
         start_run = time.time()
         self.env.run_default_configuration()
+        #if len(intial_configuration) > 0:
         self.env.run_initial_configuration(intial_configuration)
+        #else:
         self.env.run_main_configuration()
 
         #dump_cutoff = self.env.cpu_time_in_s

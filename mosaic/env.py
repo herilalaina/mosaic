@@ -22,7 +22,7 @@ class ConfigSpace_env():
     def __init__(self, eval_func,
                  config_space,
                  mem_in_mb=3024,
-                 cpu_time_in_s=30,
+                 cpu_time_in_s=300,
                  use_parameter_importance=True,
                  multi_objective=False,
                  seed = 1):
@@ -53,7 +53,7 @@ class ConfigSpace_env():
         self.rng = np.random.RandomState(seed)
 
         self.id = 0
-        self.main_hyperparameter = ["classifier:__choice__", "preprocessor:__choice__", "categorical_encoding"]
+        self.main_hyperparameter = ["classifier:__choice__", "preprocessor:__choice__", "categorical_encoding:__choice__", "imputation:strategy", "rescaling:__choice__"]
         self.max_nb_child_main_parameter = {
             "root": 16,
             "classifier:__choice__:adaboost": 10,
@@ -72,7 +72,9 @@ class ConfigSpace_env():
             "classifier:__choice__:random_forest": 10,
             "classifier:__choice__:sgd": 13,
             "classifier:__choice__:xgradient_boosting": 10,
-            "preprocessor:__choice__": 2
+            "preprocessor:__choice__": 2,
+            "imputation:strategy": 4,
+            "rescaling:__choice__": 6
         }
         self.nb_choice_hyp = self._get_nb_choice_for_each_parameter()
 
@@ -109,31 +111,24 @@ class ConfigSpace_env():
 
 
     def rollout_with_model_performance(self, history=[]):
-        if self.current_rollout is not None:
-            config = self.current_rollout
-            self.current_rollout = None
-            return config
-
         value_to_choose = []
         list_configuration_to_choose = []
         list_rollout = []
-        print("Calculate best rollout ...")
-        for _ in range(50):
-            try:
-                config = self.config_space.sample_partial_configuration_with_default(history)
-                vect_config = np.nan_to_num(config.get_array())
-                list_configuration_to_choose.append(vect_config)
-                list_rollout.append(config)
-            except Exception as e:
-                pass
+        st_time=time.time()
+        #for _ in range(1000):
+        try:
+            configs = self.config_space.sample_partial_configuration(history, 2000)
+            list_configuration_to_choose = [np.nan_to_num(c.get_array()) for c in configs]
+            #list_rollout.append(config)
+        except Exception as e:
+            pass
         mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
         ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-        if self.multi_objective:
-            mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
-            ei_values = [ei if mu_t < (self.max_eval_time - 60) else -1000 for ei, mu_t in zip(ei_values_perf, mu_time)]
+        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+        ei_values = [ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
 
         id_max = np.argmax(ei_values)
-        return list_rollout[id_max]
+        return configs[id_max]
 
     def _has_multiple_value(self, p):
         next_param_cs = self.config_space._hyperparameters[p]
@@ -166,31 +161,37 @@ class ConfigSpace_env():
         return np.mean(mu)
 
     def can_be_selectioned(self, possible_params, child_info, history):
-        final_available_param = []
-        for p in possible_params:
-            buffer = set()
-            p_cs = self.config_space.get_hyperparameter(p)
-            for _ in range(100):
-                try:
-                    new_val = p_cs.sample(self.rng)
-                    self.config_space.sample_partial_configuration(history + [(p, new_val)])
-                    buffer.add(new_val)
-                except Exception as e:
-                    pass
+        history_ens = [v[0] for v in history]
+        params_to_check = set(history_ens).intersection(set(possible_params))
+        if len(params_to_check) > 0:
+            final_available_param = possible_params
+            for p in params_to_check:
+                possible_params.remove(p)
+                buffer = set()
+                p_cs = self.config_space.get_hyperparameter(p)
+                for new_val in p_cs.choices:
+                    try:
+                        self.config_space.sample_partial_configuration(history + [(p, new_val)])
+                        buffer.add(new_val)
+                    except Exception as e:
+                        pass
 
-            if len([param for param in child_info if param == p]) < len(buffer):
-                final_available_param.append(p)
-        return final_available_param
+                if len([param for param in child_info if param == p]) < len(buffer):
+                    possible_params.append(p)
+
+        return possible_params
 
 
 
     def next_moves(self, history=[], info_childs=[]):
-        self.current_rollout = None
+        st_time = time.time()
         try:
-            config = self.config_space.sample_partial_configuration(history)
+            #config = self.config_space.sample_partial_configuration(history)
 
             possible_params_ = list(self.config_space.get_possible_next_params(history))
+            possible_params_ = list(set(possible_params_).intersection(set(self.main_hyperparameter)))
             possible_params = self.can_be_selectioned(possible_params_, [v[0] for v in info_childs], history)
+            #print("Clean possible parameter ", time.time() - st_time)
 
             if set(self.main_hyperparameter).intersection(set(possible_params)):
                 for main_p in self.main_hyperparameter:
@@ -206,34 +207,43 @@ class ConfigSpace_env():
 
             next_param_cs = self.config_space._hyperparameters[next_param]
 
+            buffer_config = []
             value_to_choose = []
-            list_configuration_to_choose = []
-            list_rollout = []
+            #print("Select name parameter ", time.time() - st_time)
 
-            for _ in range(1000):
-                next_param_v = next_param_cs.sample(self.rng)
-                if next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
+            if isinstance(next_param_cs, CategoricalHyperparameter):
+                list_choice = next_param_cs.choices
+            elif isinstance(next_param_cs, IntegerHyperparameter):
+                list_choice = [next_param_cs.sample(self.rng) for _ in range(10)]
+
+            for next_param_v in list_choice:
+                if next_param_v not in value_to_choose and next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
+                    tmp_config = []
                     try:
-                        ex_config = self.config_space.sample_partial_configuration_with_default(history + [(next_param, next_param_v)])
-                        vect_config = np.nan_to_num(ex_config.get_array())
-                        if next_param_v not in value_to_choose:
-                            value_to_choose.append(next_param_v)
-                            list_configuration_to_choose.append(vect_config)
-                            list_rollout.append(ex_config)
+                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)], 1000)
+                        tmp_config = np.nan_to_num([c.get_array() for c in ex_config])
+                        #if next_param_v not in value_to_choose:
+                        #    tmp_config.append(vect_config)
                     except Exception as e:
-                        print("Error", next_param_v)
                         pass
-
+                    if len(tmp_config) > 0:
+                        value_to_choose.append(next_param_v)
+                        buffer_config.append(tmp_config)
+            #print("Sampling next parameter ", time.time() - st_time)
+            #st_time = time.time()
             try:
-                mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
-                ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-                if self.multi_objective:
-                    mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
-                    ei_values = [ei if mu_t < (self.cpu_time_in_s - 2) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
+                list_value_score = []
+                for list_config in buffer_config:
+                    mu, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), self.score_model.model)
+                    list_value_score.append(np.mean(mu))
 
-                id_max = np.argmax(ei_values)
+                #ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+                #if self.multi_objective:
+                #mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+                #ei_values = [ei if mu_t < (self.cpu_time_in_s - 2) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
+
+                id_max = np.argmax(list_value_score)
                 value_param = value_to_choose[id_max]
-                self.current_rollout = list_rollout[id_max]
             except Exception as e:
                 print("error in ei")
                 raise(e)
@@ -248,10 +258,14 @@ class ConfigSpace_env():
             print("Value to choose", value_to_choose)
             print("Value example: ", next_param_v)
             raise (e)
+        #print("Select next parameter ", time.time() - st_time)
 
+        print("Current pipeline: ", history)
         print("Possible params", possible_params)
         print("Next params", (next_param, value_param))
-        is_terminal = not self._check_if_same_pipeline([el[0] for el in history], [el for el in config])
+        #is_terminal = not self._check_if_same_pipeline([el[0] for el in history], [el for el in config])
+        possible_params.remove(next_param)
+        is_terminal = len(set(possible_params).intersection(set(self.main_hyperparameter))) == 0
         return next_param, value_param, is_terminal
 
     def _valid_sample(self, history, config):

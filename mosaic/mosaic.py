@@ -9,7 +9,7 @@ class Search:
     def __init__(self, eval_func,
                  config_space,
                  mem_in_mb=3024,
-                 cpu_time_in_s=360,
+                 cpu_time_in_s=300,
                  time_budget=3600,
                  multi_fidelity=False,
                  use_parameter_importance=False,
