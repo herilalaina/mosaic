@@ -10,9 +10,12 @@ from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
+from ConfigSpace.util import get_one_exchange_neighbourhood_with_history
 
 import traceback
 import logging
+
+from pynisher import TimeoutException, MemorylimitException
 
 
 
@@ -31,6 +34,7 @@ class ConfigSpace_env():
             "validation_score": 0,
             "model": None
         }
+        self.seed = seed
         self.start_time = time.time()
         self.config_space = config_space
         self.use_parameter_importance = use_parameter_importance
@@ -60,8 +64,8 @@ class ConfigSpace_env():
             "classifier:__choice__:bernoulli_nb": 13,
             "classifier:__choice__:decision_tree": 10,
             "classifier:__choice__:extra_trees": 10,
-            "classifier:__choice__:gaussian_nb": 10,
-            "classifier:__choice__:gradient_boosting": 10,
+            "classifier:__choice__:gaussian_nb": 9,
+            "classifier:__choice__:gradient_boosting": 9,
             "classifier:__choice__:k_nearest_neighbors": 10,
             "classifier:__choice__:lda": 12,
             "classifier:__choice__:liblinear_svc": 13,
@@ -73,8 +77,9 @@ class ConfigSpace_env():
             "classifier:__choice__:sgd": 13,
             "classifier:__choice__:xgradient_boosting": 10,
             "preprocessor:__choice__": 2,
-            "imputation:strategy": 4,
-            "rescaling:__choice__": 6
+            "categorical_encoding:__choice__": 3,
+            "imputation:strategy": 6,
+            "rescaling:__choice__": 0
         }
         self.nb_choice_hyp = self._get_nb_choice_for_each_parameter()
 
@@ -83,6 +88,8 @@ class ConfigSpace_env():
             self.nb_exec_for_params[p] = {"nb": 0, "ens": set()}
 
         self.current_rollout = None
+
+        self.experts = {}
 
     def reset(self, eval_func,
               mem_in_mb=3024,
@@ -109,6 +116,37 @@ class ConfigSpace_env():
             except Exception as e:
                 pass
 
+    def rollout_in_expert_neighborhood(self, history = []):
+        try:
+            expert, _ = self.experts[tuple(history)]
+        except:
+            expert = self.config_space.sample_partial_configuration_with_default(history)
+
+        try:
+            #configs = [c_f for c_f in
+            #    [get_one_exchange_neighbourhood_with_history(c_i, self.seed, history) for c_i in
+            #        [c for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history)]
+            #]]
+            configs = []
+            print("[Rollout] Neighborhood on", expert.get_dictionary())
+            if np.random.random() < 0.7:
+                for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history):
+                    tmp_ = list(get_one_exchange_neighbourhood_with_history(c, self.seed, history))
+                    configs.extend(tmp_)
+            else:
+                configs.extend(self.config_space.sample_partial_configuration(history, 1000))
+
+            list_configuration_to_choose = [np.nan_to_num(c.get_array()) for c in configs]
+        except Exception as e:
+            raise(e)
+        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+        ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+        ei_values = [ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
+
+        id_max = np.argmax(ei_values)
+        return configs[id_max]
+
 
     def rollout_with_model_performance(self, history=[]):
         value_to_choose = []
@@ -117,7 +155,7 @@ class ConfigSpace_env():
         st_time=time.time()
         #for _ in range(1000):
         try:
-            configs = self.config_space.sample_partial_configuration(history, 2000)
+            configs = self.config_space.sample_partial_configuration(history, 500)
             list_configuration_to_choose = [np.nan_to_num(c.get_array()) for c in configs]
             #list_rollout.append(config)
         except Exception as e:
@@ -225,7 +263,7 @@ class ConfigSpace_env():
                         #if next_param_v not in value_to_choose:
                         #    tmp_config.append(vect_config)
                     except Exception as e:
-                        pass
+                        print(e)
                     if len(tmp_config) > 0:
                         value_to_choose.append(next_param_v)
                         buffer_config.append(tmp_config)
@@ -300,20 +338,25 @@ class ConfigSpace_env():
         if not default:
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         else:
-            eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.max_eval_time)(self.eval_func)
+            eval_func = self.eval_func
         try:
             res = eval_func(config, self.bestconfig)
             self.sucess_run += 1
 
         except TimeoutException as e:
-            self.logger.critical(e)
+            #self.logger.critical(e)
+            print(e)
             raise(e)
 
         if res is None:
             res = {"validation_score": 0, "info": None}
 
         res["running_time"] = time.time() - start_time
-        res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
+
+        self._update_expert(config, res["validation_score"])
+
+        if not default:
+            res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
 
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"], res["running_time"])
@@ -336,7 +379,13 @@ class ConfigSpace_env():
         for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
             try:
                 config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
+                st_time = time.time()
                 self._evaluate(config)
+                if time.time() - st_time > 50:
+                    continue
+                for _ in range(4):
+                    config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
+                    self._evaluate(config)
             except Exception as e:
                 print("Error when executing ", cl)
 
@@ -379,6 +428,23 @@ class ConfigSpace_env():
 
     def add_to_final_model(self, config):
         self.final_model.append(config)
+
+    def _update_expert(self, config, score):
+        buffer = []
+        for params in self.main_hyperparameter:
+            buffer.append((params, config.get(params)))
+
+            if tuple(buffer) in self.experts:
+                expert_config, expert_score = self.experts[tuple(buffer)]
+                if expert_score < score:
+                    self.experts[tuple(buffer)] = (config, score)
+            else:
+                self.experts[tuple(buffer)] = (config, score)
+
+    def estimate_action_state(self, state, next_state, action):
+        configs = self.config_space.sample_partial_configuration(state + [(next_state, action)], 1000)
+        mu, _ = self.score_model.get_mu_sigma_from_rf(np.nan_to_num([c.get_array() for c in configs]), self.score_model.model)
+        return np.mean(mu)
 
     def log_result(self, res, config):
         run = res

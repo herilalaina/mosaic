@@ -47,7 +47,7 @@ class ScoreModel():
                 list_pred.append(x_pred[0])
             output = {"perf_mean": np.mean(list_pred), "perf_std": np.std(list_pred)}
         except Exception as e:
-            print(e)
+            raise(e)
             output = {"mean": 0, "std": 0}
 
         try:

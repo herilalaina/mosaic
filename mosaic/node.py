@@ -58,7 +58,7 @@ class Node():
         if current_node["name"] == "root":
             nb_child_allowed = 20
         else:
-            nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), 0.5))
+            nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), 0.6020599913279623))
         if nb_current_childs >= min(max_number_of_child, nb_child_allowed):
             return True
 

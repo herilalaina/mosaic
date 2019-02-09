@@ -5,7 +5,7 @@ import gc
 import time
 import numpy as np
 
-from mosaic.strategy.policy import UCT, Besa
+from mosaic.strategy.policy import UCT, Besa, PUCT
 from mosaic.node import Node
 from mosaic.utils import Timeout
 from mosaic.utils import get_index_percentile
@@ -15,7 +15,7 @@ class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="uct",
+                 policy="puct",
                  time_budget=3600,
                  multi_fidelity = False):
         self.env = env
@@ -33,6 +33,8 @@ class MCTS():
             self.policy = UCT()
         elif policy == "besa":
             self.policy = Besa()
+        elif policy == "puct":
+            self.policy = PUCT(self.env, self.tree)
         else:
             raise NotImplemented("Policy {0} not implemented".format(policy))
 
@@ -69,7 +71,8 @@ class MCTS():
                     node = self.policy.selection((current_node["reward"], current_node["visits"]),
                                                  [x[0] for x in children],
                                                  [x[1] for x in children],
-                                                 [x[2] for x in children])
+                                                 [x[2] for x in children],
+                                                 state = self.tree.get_path_to_node(node))
                     self.logger.info("Selection\t node={0}".format(node))
         return node
 
@@ -88,7 +91,7 @@ class MCTS():
         """Playout policy."""
 
         st_time = time.time()
-        playout_node = self.env.rollout_with_model_performance(self.tree.get_path_to_node(node_id))
+        playout_node = self.env.rollout_in_expert_neighborhood(self.tree.get_path_to_node(node_id))
         print("Playout: ", time.time() - st_time, " sec")
 
         st_time = time.time()
