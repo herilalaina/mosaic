@@ -91,6 +91,9 @@ class ConfigSpace_env():
 
         self.experts = {}
 
+        self.problem_dependant_param = []
+        self.problem_dependant_value = {}
+
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
