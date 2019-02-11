@@ -17,7 +17,7 @@ import traceback
 import logging
 
 from pynisher import TimeoutException, MemorylimitException
-
+from mosaic.utils import Timeout
 
 
 class ConfigSpace_env():
@@ -425,35 +425,36 @@ class ConfigSpace_env():
         except Exception as e:
             raise(e)
 
+    def check_time(self):
+        if time.time() - self.start_time < 3600:
+            return True
+        else:
+            raise Timeout.Timeout("Finished")
+
+
     def run_main_configuration(self):
         print("Run main configuration")
         for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
-            try:
-                config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
-                st_time = time.time()
+            config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
+            st_time = time.time()
+            self._evaluate(self.fix_valid_configuration(config))
+            if time.time() - st_time > 50:
+                continue
+            for _ in range(4):
+                self.check_time()
+                config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
                 self._evaluate(self.fix_valid_configuration(config))
-                if time.time() - st_time > 50:
-                    continue
-                for _ in range(4):
-                    config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
-                    self._evaluate(self.fix_valid_configuration(config))
-            except Exception as e:
-                print("Error when executing ", cl)
 
     def run_random_configuration(self):
         print("Run random configuration")
-        try:
-            self._evaluate(self.fix_valid_configuration(self.config_space.sample_configuration()))
-        except:
-            pass
+        self._evaluate(self.fix_valid_configuration(self.config_space.sample_configuration()))
 
     def run_initial_configuration(self, intial_configuration):
         print("Run initial configuration")
         for c in intial_configuration:
-            try:
-                self._evaluate(self.fix_valid_configuration(c))
-            except Exception as e:
-                pass
+            self.check_time()
+            self._evaluate(self.fix_valid_configuration(c))
+
 
     def _get_nb_choice_for_each_parameter(self):
         count_dict = {}

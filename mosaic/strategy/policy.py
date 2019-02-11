@@ -14,10 +14,11 @@ class UCT(BaseStrategy, BaseEarlyStopping):
         pass
 
 class PUCT(BaseStrategy, BaseEarlyStopping):
-    def __init__(self, env, tree):
+    def __init__(self, env, tree, policy_arg):
         super().__init__()
         self.env = env
         self.tree = tree
+        self.policy_arg = policy_arg
 
     def selection(self, parent, ids, vals, visits, state=None):
         perfs = []
@@ -30,7 +31,8 @@ class PUCT(BaseStrategy, BaseEarlyStopping):
         print("vals", vals)
         print("visits", visits)
         print("probas", probas)
-        res = [val +  0.01 * prob * math.sqrt(sum(visits)) / (vis + 1) for vis, val, prob in zip(visits, vals, probas)]
+        print("c=", self.policy_arg["c"])
+        res = [val + self.policy_arg["c"] * prob * math.sqrt(sum(visits)) / (vis + 1) for vis, val, prob in zip(visits, vals, probas)]
         print("Final selection policy ", res)
         print("Selected ", np.argmax(res))
         print("#########################################################################")

@@ -17,7 +17,8 @@ class MCTS():
     def __init__(self, env,
                  policy="puct",
                  time_budget=3600,
-                 multi_fidelity = False):
+                 multi_fidelity = False,
+                 policy_arg = None):
         self.env = env
         self.time_budget = time_budget
         self.multi_fidelity = multi_fidelity
@@ -34,7 +35,7 @@ class MCTS():
         elif policy == "besa":
             self.policy = Besa()
         elif policy == "puct":
-            self.policy = PUCT(self.env, self.tree)
+            self.policy = PUCT(self.env, self.tree, policy_arg)
         else:
             raise NotImplemented("Policy {0} not implemented".format(policy))
 
@@ -123,9 +124,12 @@ class MCTS():
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
                 self.env.run_default_configuration()
+                self.env.check_time()
                 #if len(intial_configuration) > 0:
                 self.env.run_initial_configuration(intial_configuration)
+
                 #else:
+                self.env.check_time()
                 self.env.run_main_configuration()
 
                 #dump_cutoff = self.env.cpu_time_in_s
