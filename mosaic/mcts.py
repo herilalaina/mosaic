@@ -91,14 +91,23 @@ class MCTS():
         """Playout policy."""
 
         st_time = time.time()
-        playout_node = self.env.rollout_in_expert_neighborhood(self.tree.get_path_to_node(node_id))
+        playout_nodes = self.env.rollout_in_expert_neighborhood(self.tree.get_path_to_node(node_id))
         print("Playout: ", time.time() - st_time, " sec")
 
         st_time = time.time()
-        score = self.policy.evaluate(self.env._evaluate, [playout_node])
+        for i, playout_node in enumerate(playout_nodes):
+            print("PLAYOUT ", i)
+            st_time_playout = time.time()
+            score = self.policy.evaluate(self.env._evaluate, [playout_node])
+            if score > 0:
+                self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
+                return score
+            elif time.time() - st_time_playout > 200:
+                break
         print("Evaluate: ", time.time() - st_time, " sec")
-        self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
-        return score
+
+        self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, 0))
+        return 0
 
 
     def BACKUP(self, node, reward):
@@ -111,21 +120,21 @@ class MCTS():
 
     def run(self, n = 1, intial_configuration = [], generate_image_path = ""):
         start_run = time.time()
-        self.env.run_default_configuration()
-        #if len(intial_configuration) > 0:
-        self.env.run_initial_configuration(intial_configuration)
-        #else:
-        self.env.run_main_configuration()
+        with Timeout(int(self.time_budget - (start_run - time.time()))):
+            try:
+                self.env.run_default_configuration()
+                #if len(intial_configuration) > 0:
+                self.env.run_initial_configuration(intial_configuration)
+                #else:
+                self.env.run_main_configuration()
 
-        #dump_cutoff = self.env.cpu_time_in_s
-        #self.env.cpu_time_in_s = 10
-        # [self.env.run_random_configuration() for i in range(50)]
-        #self.env.cpu_time_in_s = dump_cutoff
+                #dump_cutoff = self.env.cpu_time_in_s
+                #self.env.cpu_time_in_s = 10
+                # [self.env.run_random_configuration() for i in range(50)]
+                #self.env.cpu_time_in_s = dump_cutoff
 
-        if self.multi_fidelity:
-            self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
-        try:
-            with Timeout(int(self.time_budget - (start_run - time.time()))):
+                if self.multi_fidelity:
+                    self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
                         self.MCT_SEARCH()
@@ -138,8 +147,8 @@ class MCTS():
                     else:
                         return 0
                     gc.collect()
-        except Timeout.Timeout:
-            return 0
+            except Timeout.Timeout:
+                return 0
 
     def print_tree(self, images):
         self.tree.draw_tree(images)

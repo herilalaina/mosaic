@@ -11,6 +11,7 @@ from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
 from ConfigSpace.util import get_one_exchange_neighbourhood_with_history
+from ConfigSpace import Configuration
 
 import traceback
 import logging
@@ -119,6 +120,46 @@ class ConfigSpace_env():
             except Exception as e:
                 pass
 
+    def fix_valid_configuration(self, config_):
+        try:
+            config = config_
+            arr = config_.get_dictionary()
+            for p, p_problem in zip([117, 120, 122, 132], self.problem_dependant_param):
+                if p_problem in config:
+                    arr[p_problem] = min([config[p_problem], 10])
+                    #if config[p_problem] > self.problem_dependant_value[config["categorical_encoding:__choice__"]]:
+                        #config[p_problem] = self.config_space.get_hyperparameter(p_problem)._transform(10)
+
+
+            if not self.problem_dependant_value["is_positive"]:
+                for p in ["preprocessor:select_percentile_classification:score_func", "preprocessor:select_rates:score_func"]:
+                    if p in arr:
+                        arr[p] = "f_classif"
+
+
+            return Configuration(configuration_space=self.config_space, values=arr, allow_inactive_with_values=True)
+        except:
+            pass
+        return config_
+
+    def fix_rollout_value(self, configs):
+        try:
+            # Encoding
+            mask_normal_encoding = configs[:, 1] == 0
+            mask_onehot_encoding = configs[:, 1] == 1
+            for p, name_p in zip([117, 120, 122, 132], self.problem_dependant_param):
+                configs[mask_normal_encoding, p] = np.minimum(configs[mask_normal_encoding, p], self.config_space.get_hyperparameter(name_p)._transform(10))
+                configs[mask_onehot_encoding, p] = np.minimum(configs[mask_onehot_encoding, p], self.config_space.get_hyperparameter(name_p)._transform(10))
+
+            if not self.problem_dependant_value["is_positive"]:
+                configs[configs[:, 146] == 0, 146] = 1
+                configs[configs[:, 149] == 0, 149] = 1
+
+            return configs
+        except Exception as e:
+            print(e)
+        return configs
+
     def rollout_in_expert_neighborhood(self, history = []):
         try:
             expert, _ = self.experts[tuple(history)]
@@ -139,16 +180,21 @@ class ConfigSpace_env():
             else:
                 configs.extend(self.config_space.sample_partial_configuration(history, 1000))
 
-            list_configuration_to_choose = [np.nan_to_num(c.get_array()) for c in configs]
+            #st_time = time.time()
+            #configs = [c for c in configs if self._is_valid_configuration(c)]
+            #print("New n_components ", time.time() - st_time)
+
+            list_configuration_to_choose = np.nan_to_num(np.array([c.get_array() for c in configs]))
+
         except Exception as e:
             raise(e)
         mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
         ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
         mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
-        ei_values = [ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
+        ei_values = np.array([ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)])
 
-        id_max = np.argmax(ei_values)
-        return configs[id_max]
+        id_max = (-ei_values).argsort()[:100]
+        return [configs[id] for id in id_max]
 
 
     def rollout_with_model_performance(self, history=[]):
@@ -258,6 +304,7 @@ class ConfigSpace_env():
                 list_choice = [next_param_cs.sample(self.rng) for _ in range(10)]
 
             for next_param_v in list_choice:
+                stt_time = time.time()
                 if next_param_v not in value_to_choose and next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
                     tmp_config = []
                     try:
@@ -266,10 +313,11 @@ class ConfigSpace_env():
                         #if next_param_v not in value_to_choose:
                         #    tmp_config.append(vect_config)
                     except Exception as e:
-                        print(e)
+                        print("Can not sample for ", next_param, next_param_v)
                     if len(tmp_config) > 0:
                         value_to_choose.append(next_param_v)
                         buffer_config.append(tmp_config)
+                print("sampling ", next_param, next_param_v, " : ", time.time() - stt_time)
             #print("Sampling next parameter ", time.time() - st_time)
             #st_time = time.time()
             try:
@@ -364,7 +412,7 @@ class ConfigSpace_env():
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"], res["running_time"])
         else:
-            self.score_model.partial_fit(np.nan_to_num(config.get_array()), -1, 3000)
+            self.score_model.partial_fit(np.nan_to_num(config.get_array()), 0, 3000)
 
         self.log_result(res, config)
 
@@ -373,7 +421,7 @@ class ConfigSpace_env():
     def run_default_configuration(self):
         print("Run default configuration")
         try:
-            self._evaluate(self.config_space.get_default_configuration(), default=True)
+            self._evaluate(self.fix_valid_configuration(self.config_space.get_default_configuration()), default=True)
         except Exception as e:
             raise(e)
 
@@ -383,19 +431,19 @@ class ConfigSpace_env():
             try:
                 config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
                 st_time = time.time()
-                self._evaluate(config)
+                self._evaluate(self.fix_valid_configuration(config))
                 if time.time() - st_time > 50:
                     continue
                 for _ in range(4):
                     config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
-                    self._evaluate(config)
+                    self._evaluate(self.fix_valid_configuration(config))
             except Exception as e:
                 print("Error when executing ", cl)
 
     def run_random_configuration(self):
         print("Run random configuration")
         try:
-            self._evaluate(self.config_space.sample_configuration())
+            self._evaluate(self.fix_valid_configuration(self.config_space.sample_configuration()))
         except:
             pass
 
@@ -403,7 +451,7 @@ class ConfigSpace_env():
         print("Run initial configuration")
         for c in intial_configuration:
             try:
-                self._evaluate(c)
+                self._evaluate(self.fix_valid_configuration(c))
             except Exception as e:
                 pass
 

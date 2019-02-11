@@ -26,6 +26,15 @@ class PUCT(BaseStrategy, BaseEarlyStopping):
             perfs.append(self.env.estimate_action_state(state, child["name"], child["value"]))
         N = np.sum([np.exp(x) for x in perfs])
         probas = [np.exp(x) / N for x in perfs]
+        print("################################ Selection ##############################")
+        print("vals", vals)
+        print("visits", visits)
+        print("probas", probas)
+        res = [val +  0.01 * prob * math.sqrt(sum(visits)) / (vis + 1) for vis, val, prob in zip(visits, vals, probas)]
+        print("Final selection policy ", res)
+        print("Selected ", np.argmax(res))
+        print("#########################################################################")
+
         return ids[np.argmax([val + 0.1 * prob * math.sqrt(sum(visits)) / (vis + 1) for vis, val, prob in zip(visits, vals, probas)])]
 
     def playout(self):
