@@ -9,6 +9,7 @@ class ScoreModel():
     def __init__(self, nb_param, X=None, y=None, id_most_import_class = None, dataset_features = []):
         self.model = RandomForestRegressor()
         self.model_of_time = RandomForestRegressor()
+        self.model_general = RandomForestRegressor()
         self.nb_param = nb_param
         self.id_most_import_class = id_most_import_class
         self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
@@ -23,6 +24,9 @@ class ScoreModel():
             self.X, self.y, self.y_time = X, y, y_time
 
         self.nb_added = 0
+
+    def learn_general_model(self, X, y):
+        self.model_general.fit(X, y)
 
     def _normalize_x_with_features(self, x):
         if len(self.dataset_features) > 0:
@@ -64,11 +68,22 @@ class ScoreModel():
 
         return output
 
-    def get_mu_sigma_from_rf(self, X, model):
+    def get_mu_sigma_from_rf(self, X, model = "normal"):
         list_pred = []
-        for estimator in model.estimators_:
-            x_pred = estimator.predict(X)
-            list_pred.append(x_pred)
+        if model == "local":
+            for estimator in self.model.estimators_:
+                x_pred = self.model.predict(X)
+                list_pred.append(x_pred)
+        elif model == "general":
+            for estimator in self.model_general.estimators_:
+                x_pred = self.model_general.predict([np.concatenate([x, self.dataset_features]) for x in X])
+                list_pred.append(x_pred)
+        elif model == "time":
+            for estimator in self.model_of_time.estimators_:
+                x_pred = self.model_of_time.predict(X)
+                list_pred.append(x_pred)
+        else:
+            raise Exception("Unknown model", model)
         return np.mean(list_pred, axis=0), np.std(list_pred, axis=0)
 
     def load_data(self):
@@ -94,6 +109,7 @@ class ScoreModel():
         sample_weight = self._get_sample_weight()
         self.model.fit(self.X, self.y, sample_weight=sample_weight)
         self.model_of_time.fit(self.X, self.y_time, sample_weight=sample_weight)
+        self.model_general.fit([np.concatenate([x, self.dataset_features])  for x in self.X], self.y)
 
     def importance_variable(self):
         if check_is_fitted(self.model):

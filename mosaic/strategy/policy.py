@@ -1,4 +1,5 @@
 import math
+import time
 import numpy as np
 from mosaic.strategy import BaseStrategy, BaseEarlyStopping
 
@@ -14,28 +15,39 @@ class UCT(BaseStrategy, BaseEarlyStopping):
         pass
 
 class PUCT(BaseStrategy, BaseEarlyStopping):
-    def __init__(self, env, tree):
+    def __init__(self, env, tree, policy_arg):
         super().__init__()
         self.env = env
         self.tree = tree
+        self.policy_arg = policy_arg
 
     def selection(self, parent, ids, vals, visits, state=None):
         perfs = []
+        perfs_general = []
         for id_child in ids:
             child = self.tree.get_info_node(id_child)
             perfs.append(self.env.estimate_action_state(state, child["name"], child["value"]))
+            perfs_general.append(self.env.estimate_action_state(state, child["name"], child["value"], local_model = False))
         N = np.sum([np.exp(x) for x in perfs])
+        N_general = np.sum([np.exp(x) for x in perfs_general])
         probas = [np.exp(x) / N for x in perfs]
+        probas_general = [np.exp(x) / N_general for x in perfs_general]
+
+        beta = (time.time() - self.policy_arg["start_time"]) / self.policy_arg["time_budget"]
+
         print("################################ Selection ##############################")
         print("vals", vals)
         print("visits", visits)
         print("probas", probas)
-        res = [val +  0.01 * prob * math.sqrt(sum(visits)) / (vis + 1) for vis, val, prob in zip(visits, vals, probas)]
+        print("c=", self.policy_arg["c"])
+        print("beta=", beta)
+        res = [val + self.policy_arg["c"] * (prob * beta + (1 - beta) * prob_gen) * math.sqrt(sum(visits)) / (vis + 1)
+                for vis, val, prob, prob_gen in zip(visits, vals, probas, probas_general)]
         print("Final selection policy ", res)
         print("Selected ", np.argmax(res))
         print("#########################################################################")
 
-        return ids[np.argmax([val + 0.1 * prob * math.sqrt(sum(visits)) / (vis + 1) for vis, val, prob in zip(visits, vals, probas)])]
+        return ids[np.argmax(res)]
 
     def playout(self):
         pass

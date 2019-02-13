@@ -2,6 +2,7 @@
 
 import time
 import pynisher
+import os, sys
 import numpy as np
 import pickle as pkl
 
@@ -10,14 +11,17 @@ from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
-from ConfigSpace.util import get_one_exchange_neighbourhood_with_history
+from ConfigSpace.util import get_one_exchange_neighbourhood_with_history, get_one_exchange_neighbourhood
 from ConfigSpace import Configuration
 
 import traceback
 import logging
+import glob
+import csv
+from sklearn.metrics.pairwise import cosine_similarity
 
 from pynisher import TimeoutException, MemorylimitException
-
+from mosaic.utils import Timeout
 
 
 class ConfigSpace_env():
@@ -173,24 +177,25 @@ class ConfigSpace_env():
             #]]
             configs = []
             print("[Rollout] Neighborhood on", expert.get_dictionary())
-            if np.random.random() < 0.7:
+            if np.random.random() < 0.8:
                 for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history):
                     tmp_ = list(get_one_exchange_neighbourhood_with_history(c, self.seed, history))
                     configs.extend(tmp_)
             else:
-                configs.extend(self.config_space.sample_partial_configuration(history, 1000))
-
-            #st_time = time.time()
-            #configs = [c for c in configs if self._is_valid_configuration(c)]
-            #print("New n_components ", time.time() - st_time)
+                configs.extend(self.config_space.sample_partial_configuration(history, 100))
 
             list_configuration_to_choose = np.nan_to_num(np.array([c.get_array() for c in configs]))
 
         except Exception as e:
             raise(e)
-        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
-        ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
+        beta = self.get_beta()
+        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "general")
+        ei_values_general = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+        mu_loc, sigma_loc = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
+        ei_values_local = expected_improvement(mu_loc, sigma_loc, self.bestconfig["validation_score"])
+        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "time")
+        ei_values = [beta * ei_l + (1 - beta) * ei_g for ei_l, ei_g in zip(ei_values_local, ei_values_general)]
+
         ei_values = np.array([ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)])
 
         id_max = (-ei_values).argsort()[:100]
@@ -216,6 +221,9 @@ class ConfigSpace_env():
 
         id_max = np.argmax(ei_values)
         return configs[id_max]
+
+    def get_beta(self):
+        return (time.time() - self.start_time) / 3600
 
     def _has_multiple_value(self, p):
         next_param_cs = self.config_space._hyperparameters[p]
@@ -244,7 +252,7 @@ class ConfigSpace_env():
                     value_to_choose.append(next_param_v)
             except Exception as e:
                 pass
-        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model)
+        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
         return np.mean(mu)
 
     def can_be_selectioned(self, possible_params, child_info, history):
@@ -323,13 +331,10 @@ class ConfigSpace_env():
             try:
                 list_value_score = []
                 for list_config in buffer_config:
-                    mu, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), self.score_model.model)
-                    list_value_score.append(np.mean(mu))
-
-                #ei_values = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-                #if self.multi_objective:
-                #mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), self.score_model.model_of_time)
-                #ei_values = [ei if mu_t < (self.cpu_time_in_s - 2) else -1000 for ei, mu_t in zip(ei_values, mu_time)]
+                    beta = self.get_beta()
+                    mu_gen, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), "general")
+                    mu_loc, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), "local")
+                    list_value_score.append(np.mean(mu_gen) * (1 - beta) + np.mean(mu_loc) * beta)
 
                 id_max = np.argmax(list_value_score)
                 value_param = value_to_choose[id_max]
@@ -398,7 +403,6 @@ class ConfigSpace_env():
         except TimeoutException as e:
             #self.logger.critical(e)
             print(e)
-            raise(e)
 
         if res is None:
             res = {"validation_score": 0, "info": None}
@@ -426,35 +430,43 @@ class ConfigSpace_env():
         except Exception as e:
             raise(e)
 
+    def check_time(self):
+        if time.time() - self.start_time < 3600:
+            return True
+        else:
+            raise Timeout.Timeout("Finished")
+
+
     def run_main_configuration(self):
         print("Run main configuration")
         for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
-            try:
-                config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
-                st_time = time.time()
+            config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
+            st_time = time.time()
+            self._evaluate(self.fix_valid_configuration(config))
+            if time.time() - st_time > 50:
+                continue
+            for _ in range(4):
+                self.check_time()
+                config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
                 self._evaluate(self.fix_valid_configuration(config))
-                if time.time() - st_time > 50:
-                    continue
-                for _ in range(4):
-                    config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
-                    self._evaluate(self.fix_valid_configuration(config))
-            except Exception as e:
-                print("Error when executing ", cl)
 
     def run_random_configuration(self):
         print("Run random configuration")
-        try:
-            self._evaluate(self.fix_valid_configuration(self.config_space.sample_configuration()))
-        except:
-            pass
+        self._evaluate(self.fix_valid_configuration(self.config_space.sample_configuration()))
 
     def run_initial_configuration(self, intial_configuration):
         print("Run initial configuration")
         for c in intial_configuration:
-            try:
-                self._evaluate(self.fix_valid_configuration(c))
-            except Exception as e:
-                pass
+            self.check_time()
+            self._evaluate(self.fix_valid_configuration(c))
+
+        for c in intial_configuration:
+            for i in get_one_exchange_neighbourhood(c, self.seed):
+                self.env.check_time()
+                score = self._evaluate(i)
+                if score > 0:
+                    break
+
 
     def _get_nb_choice_for_each_parameter(self):
         count_dict = {}
@@ -493,10 +505,51 @@ class ConfigSpace_env():
             else:
                 self.experts[tuple(buffer)] = (config, score)
 
-    def estimate_action_state(self, state, next_state, action):
+    def estimate_action_state(self, state, next_state, action, local_model = True):
         configs = self.config_space.sample_partial_configuration(state + [(next_state, action)], 1000)
-        mu, _ = self.score_model.get_mu_sigma_from_rf(np.nan_to_num([c.get_array() for c in configs]), self.score_model.model)
+        mu, _ = self.score_model.get_mu_sigma_from_rf(np.nan_to_num([c.get_array() for c in configs]), "local" if local_model else "general")
         return np.mean(mu)
+
+    def get_nearest_data(self, id):
+        ids = []
+        ranks = []
+        for f_ in glob.glob("/scratch/hrakotoa/mosaic_metadata/*"):
+            with open(f_, 'r') as f:
+                id_data = int(f_.split("metadata_")[1])
+                reader = csv.reader(f)
+                for row in reader:
+                    ranks.append([ float(i) for i in row ])
+                    ids.append(id_data)
+        ranks = np.array(ranks)
+        X_sim = cosine_similarity(ranks)
+
+        self.score_model.dataset_features = ranks[ids.index(id)]
+
+        sim_for_data = X_sim[ids.index(id)]
+
+        id_nears = sim_for_data.argsort()[-5:-1][::-1]
+        return [ids[id_near] for id_near in id_nears], [ranks[id_near] for id_near in id_nears]
+
+
+    def get_test_performance_neighbors(self, id):
+        id_neighborhoods, features = self.get_nearest_data(id)
+        X = []
+        Y = []
+        for i_, id_n in enumerate(id_neighborhoods):
+            for seed in range(1, 7):
+                try:
+                    path = "/scratch/hrakotoa/mosaic_exec/{0}/{1}/".format(seed, id_n)
+                    X_ = np.load(os.path.join(path, "X.npy"))
+                    Y_ = np.load(os.path.join(path, "y.npy"))
+                    X.extend([np.concatenate([x, features[i_]]) for x in X_])
+                    Y.extend(Y_)
+                except Exception as e:
+                    print(e)
+        return X, Y
+
+    def load_metalearning_x_y(self, id):
+        X, y = self.get_test_performance_neighbors(id)
+        self.score_model.model_general.fit(X, y)
 
     def log_result(self, res, config):
         run = res

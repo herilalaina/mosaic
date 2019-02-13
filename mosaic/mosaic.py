@@ -14,7 +14,8 @@ class Search:
                  multi_fidelity=False,
                  use_parameter_importance=False,
                  problem_features = [],
-                 seed = 1):
+                 seed = 1,
+                 policy_arg = {}):
         env = ConfigSpace_env(eval_func,
                               config_space=config_space,
                               mem_in_mb=mem_in_mb,
@@ -25,7 +26,8 @@ class Search:
         env.score_model.dataset_features = problem_features
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
-                         multi_fidelity=multi_fidelity)
+                         multi_fidelity=multi_fidelity,
+                         policy_arg = policy_arg)
 
         # config logger
         self.logger = logging.getLogger('mcts')
