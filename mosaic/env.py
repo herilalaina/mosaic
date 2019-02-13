@@ -385,13 +385,14 @@ class ConfigSpace_env():
         return preprocessed_moves
 
     def _evaluate(self, config, default=False):
+        self.id += 1
         start_time = time.time()
         if not default:
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         else:
             eval_func = self.eval_func
         try:
-            res = eval_func(config, self.bestconfig)
+            res = eval_func(config, self.bestconfig, self.id)
             self.sucess_run += 1
 
         except TimeoutException as e:
@@ -409,12 +410,12 @@ class ConfigSpace_env():
         if not default:
             res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
 
+        self.log_result(res, config)
+
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"], res["running_time"])
         else:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), 0, 3000)
-
-        self.log_result(res, config)
 
         return res["validation_score"]
 
@@ -507,7 +508,6 @@ class ConfigSpace_env():
             self.nb_exec_for_params[k]["ens"].add(v)
 
         self.history_score.append(run)
-        self.id += 1
 
         print(">> {0}: validation score: {1}\n".format(str(config), res["validation_score"]))
 
