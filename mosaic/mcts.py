@@ -35,6 +35,8 @@ class MCTS():
         elif policy == "besa":
             self.policy = Besa()
         elif policy == "puct":
+            policy_arg["start_time"] = self.env.start_time
+            policy_arg["time_budget"] = self.time_budget
             self.policy = PUCT(self.env, self.tree, policy_arg)
         else:
             raise NotImplemented("Policy {0} not implemented".format(policy))
@@ -127,7 +129,6 @@ class MCTS():
                 self.env.check_time()
                 #if len(intial_configuration) > 0:
                 self.env.run_initial_configuration(intial_configuration)
-
                 #else:
                 self.env.check_time()
                 self.env.run_main_configuration()
