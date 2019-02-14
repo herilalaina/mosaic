@@ -177,7 +177,7 @@ class ConfigSpace_env():
             #]]
             configs = []
             print("[Rollout] Neighborhood on", expert.get_dictionary())
-            if np.random.random() < 0.8:
+            if np.random.random() < 0.7:
                 for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history):
                     tmp_ = list(get_one_exchange_neighbourhood_with_history(c, self.seed, history))
                     configs.extend(tmp_)
@@ -190,16 +190,16 @@ class ConfigSpace_env():
             raise(e)
         beta = self.get_beta()
         mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "general")
-        ei_values_general = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
+        #ei_values_general = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
         mu_loc, sigma_loc = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
-        ei_values_local = expected_improvement(mu_loc, sigma_loc, self.bestconfig["validation_score"])
+        #ei_values_local = expected_improvement(mu_loc, sigma_loc, self.bestconfig["validation_score"])
         mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "time")
-        ei_values = [beta * ei_l + (1 - beta) * ei_g for ei_l, ei_g in zip(ei_values_local, ei_values_general)]
 
-        ei_values = np.array([ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)])
+        ei_values = np.array([mu_gener * beta + (1 - beta) * mu_local for mu_gener, mu_local in zip(mu, mu_loc)])
+        #ei_values = np.array([ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)])
 
         id_max = (-ei_values).argsort()[:100]
-        return [configs[id] for id in id_max]
+        return [configs[np.random.choice(id_max)] for _ in range(200)]
 
 
     def rollout_with_model_performance(self, history=[]):
@@ -362,6 +362,8 @@ class ConfigSpace_env():
         is_terminal = len(set(possible_params).intersection(set(self.main_hyperparameter))) == 0
         return next_param, value_param, is_terminal
 
+
+
     def _valid_sample(self, history, config):
         for hp_name, hp_value in history:
             if hp_name not in config.keys() or config[hp_name] != hp_value:
@@ -414,12 +416,12 @@ class ConfigSpace_env():
         if not default:
             res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
 
-        self.log_result(res, config)
-
         if res["validation_score"] > 0:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), res["validation_score"], res["running_time"])
         else:
             self.score_model.partial_fit(np.nan_to_num(config.get_array()), 0, 3000)
+
+        self.log_result(res, config)
 
         return res["validation_score"]
 
@@ -462,7 +464,7 @@ class ConfigSpace_env():
 
         for c in intial_configuration:
             for i in get_one_exchange_neighbourhood(c, self.seed):
-                self.env.check_time()
+                self.check_time()
                 score = self._evaluate(i)
                 if score > 0:
                     break
@@ -527,7 +529,7 @@ class ConfigSpace_env():
 
         sim_for_data = X_sim[ids.index(id)]
 
-        id_nears = sim_for_data.argsort()[-5:-1][::-1]
+        id_nears = sim_for_data.argsort()[-10:-1][::-1]
         return [ids[id_near] for id_near in id_nears], [ranks[id_near] for id_near in id_nears]
 
 
