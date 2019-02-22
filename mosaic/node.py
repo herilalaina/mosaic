@@ -16,6 +16,8 @@ class Node():
         self.id_count = -1
         self.add_node(name = "root", value=None)
 
+        self.coef_progressive_widening = 0.6020599913279623
+
     def get_new_id(self):
         self.id_count += 1
         return self.id_count
@@ -55,10 +57,11 @@ class Node():
         else:
             max_number_of_child = 20
 
-        #if current_node["name"] == "root":
-        #    nb_child_allowed = 20
-        #else:
-        nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), 0.6020599913279623))
+        if current_node["name"] == "root":
+            nb_child_allowed = 20
+        else:
+            nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), self.coef_progressive_widening))
+
         if nb_current_childs >= min(max_number_of_child, nb_child_allowed):
             return True
 

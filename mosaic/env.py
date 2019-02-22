@@ -99,6 +99,8 @@ class ConfigSpace_env():
         self.problem_dependant_param = []
         self.problem_dependant_value = {}
 
+        self.proba_expert = 0.7
+
     def reset(self, eval_func,
               mem_in_mb=3024,
               cpu_time_in_s=30):
@@ -164,7 +166,11 @@ class ConfigSpace_env():
             print(e)
         return configs
 
+    def is_metalearning(self):
+        return self.score_model.active_general_model
+
     def rollout_in_expert_neighborhood(self, history = []):
+        print("[Proba expert: {0}]".format(self.proba_expert))
         try:
             expert, _ = self.experts[tuple(history)]
         except:
@@ -177,26 +183,25 @@ class ConfigSpace_env():
             #]]
             configs = []
             print("[Rollout] Neighborhood on", expert.get_dictionary())
-            if np.random.random() < 0.7:
-                for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history):
-                    tmp_ = list(get_one_exchange_neighbourhood_with_history(c, self.seed, history))
-                    configs.extend(tmp_)
-            else:
-                configs.extend(self.config_space.sample_partial_configuration(history, 100))
+            for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history):
+                tmp_ = list(get_one_exchange_neighbourhood_with_history(c, self.seed, history))
+                configs.extend(tmp_)
+            configs.extend(self.config_space.sample_partial_configuration(history, 1000))
 
             list_configuration_to_choose = np.nan_to_num(np.array([c.get_array() for c in configs]))
 
         except Exception as e:
             raise(e)
-        beta = self.get_beta()
-        mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "general")
-        #ei_values_general = expected_improvement(mu, sigma, self.bestconfig["validation_score"])
-        mu_loc, sigma_loc = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
-        #ei_values_local = expected_improvement(mu_loc, sigma_loc, self.bestconfig["validation_score"])
-        mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "time")
 
-        ei_values = np.array([mu_gener * beta + (1 - beta) * mu_local for mu_gener, mu_local in zip(mu, mu_loc)])
-        #ei_values = np.array([ei if mu_t < (self.cpu_time_in_s) else -1000 for ei, mu_t in zip(ei_values, mu_time)])
+        mu_loc, sigma_loc = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
+        ei_values = expected_improvement(mu_loc, sigma_loc, self.bestconfig["validation_score"])
+        #mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "time")
+
+        #if self.is_metalearning:
+        #    beta = self.get_beta()
+        #    mu_gen, sigma_gen = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "general")
+
+        #ei_values = np.array([mu_gener * beta + (1 - beta) * mu_local for mu_gener, mu_local in zip(mu, mu_loc)])
 
         id_max = (-ei_values).argsort()[:100]
         return [configs[np.random.choice(id_max)] for _ in range(200)]
@@ -316,7 +321,7 @@ class ConfigSpace_env():
                 if next_param_v not in value_to_choose and next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
                     tmp_config = []
                     try:
-                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)], 1000)
+                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)], 300)
                         tmp_config = np.nan_to_num([c.get_array() for c in ex_config])
                         #if next_param_v not in value_to_choose:
                         #    tmp_config.append(vect_config)
@@ -332,9 +337,9 @@ class ConfigSpace_env():
                 list_value_score = []
                 for list_config in buffer_config:
                     beta = self.get_beta()
-                    mu_gen, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), "general")
+                    #mu_gen, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), "general")
                     mu_loc, _ = self.score_model.get_mu_sigma_from_rf(np.array(list_config), "local")
-                    list_value_score.append(np.mean(mu_gen) * (1 - beta) + np.mean(mu_loc) * beta)
+                    list_value_score.append(np.median(mu_loc))
 
                 id_max = np.argmax(list_value_score)
                 value_param = value_to_choose[id_max]
@@ -391,20 +396,23 @@ class ConfigSpace_env():
             preprocessed_moves.append((model, params))
         return preprocessed_moves
 
-    def _evaluate(self, config, default=False):
+    def _evaluate(self, config, type="normal"):
         self.id += 1
         start_time = time.time()
-        if not default:
+        if type == "normal":
             eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
+        elif type == "init":
+            eval_func = pynisher.enforce_limits(mem_in_mb=5000, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
         else:
             eval_func = self.eval_func
         try:
             res = eval_func(config, self.bestconfig, self.id)
             self.sucess_run += 1
 
-        except TimeoutException as e:
+        except Exception as e:
             #self.logger.critical(e)
             print(e)
+            raise(e)
 
         if res is None:
             res = {"validation_score": 0, "info": None}
@@ -413,7 +421,7 @@ class ConfigSpace_env():
 
         self._update_expert(config, res["validation_score"])
 
-        if not default:
+        if type != "default":
             res["predict_performance"] = self.score_model.get_performance(np.nan_to_num(config.get_array()))
 
         if res["validation_score"] > 0:
@@ -428,7 +436,7 @@ class ConfigSpace_env():
     def run_default_configuration(self):
         print("Run default configuration")
         try:
-            self._evaluate(self.fix_valid_configuration(self.config_space.get_default_configuration()), default=True)
+            self._evaluate(self.config_space.get_default_configuration(), type="default")
         except Exception as e:
             raise(e)
 
@@ -441,33 +449,46 @@ class ConfigSpace_env():
 
     def run_main_configuration(self):
         print("Run main configuration")
-        for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
+        id_score = {}
+        for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
+            id_score[cl] = []
+
+        for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
             config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
             st_time = time.time()
-            self._evaluate(self.fix_valid_configuration(config))
+            score = self._evaluate(config)
+            id_score[config["classifier:__choice__"]].append(score)
             if time.time() - st_time > 50:
                 continue
-            for _ in range(4):
+            for _ in range(5):
                 self.check_time()
                 config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
-                self._evaluate(self.fix_valid_configuration(config))
+                score = self._evaluate(config)
+                id_score[config["classifier:__choice__"]].append(score)
+        return id_score
 
     def run_random_configuration(self):
         print("Run random configuration")
-        self._evaluate(self.fix_valid_configuration(self.config_space.sample_configuration()))
+        self._evaluate(self.config_space.sample_configuration())
 
     def run_initial_configuration(self, intial_configuration):
         print("Run initial configuration")
+        id_score = {}
+        for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
+            id_score[cl] = []
         for c in intial_configuration:
             self.check_time()
-            self._evaluate(self.fix_valid_configuration(c))
+            score = self._evaluate(c)
+            id_score[c["classifier:__choice__"]].append(score)
 
-        for c in intial_configuration:
+        return id_score
+
+        """for c in intial_configuration:
             for i in get_one_exchange_neighbourhood(c, self.seed):
                 self.check_time()
                 score = self._evaluate(i)
                 if score > 0:
-                    break
+                    break"""
 
 
     def _get_nb_choice_for_each_parameter(self):
@@ -508,6 +529,8 @@ class ConfigSpace_env():
                 self.experts[tuple(buffer)] = (config, score)
 
     def estimate_action_state(self, state, next_state, action, local_model = True):
+        if local_model == "general" and not self.is_metalearning:
+            local_model = "local"
         configs = self.config_space.sample_partial_configuration(state + [(next_state, action)], 1000)
         mu, _ = self.score_model.get_mu_sigma_from_rf(np.nan_to_num([c.get_array() for c in configs]), "local" if local_model else "general")
         return np.mean(mu)
@@ -551,6 +574,7 @@ class ConfigSpace_env():
 
     def load_metalearning_x_y(self, id):
         X, y = self.get_test_performance_neighbors(id)
+        self.score_model.active_general_model = True
         self.score_model.model_general.fit(X, y)
 
     def log_result(self, res, config):

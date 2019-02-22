@@ -20,6 +20,7 @@ class PUCT(BaseStrategy, BaseEarlyStopping):
         self.env = env
         self.tree = tree
         self.policy_arg = policy_arg
+        self.scores = dict()
 
     def selection(self, parent, ids, vals, visits, state=None):
         perfs = []
@@ -41,7 +42,7 @@ class PUCT(BaseStrategy, BaseEarlyStopping):
         print("probas", probas)
         print("c=", self.policy_arg["c"])
         print("beta=", beta)
-        res = [val + self.policy_arg["c"] * (prob * beta + (1 - beta) * prob_gen) * math.sqrt(sum(visits)) / (vis + 1)
+        res = [val + self.policy_arg["c"] * (prob) * math.sqrt(sum(visits)) / (vis + 1)
                 for vis, val, prob, prob_gen in zip(visits, vals, probas, probas_general)]
         print("Final selection policy ", res)
         print("Selected ", np.argmax(res))
@@ -51,6 +52,13 @@ class PUCT(BaseStrategy, BaseEarlyStopping):
 
     def playout(self):
         pass
+
+    def backpropagate(self, id, value, visit, reward):
+        if id in self.scores:
+            self.scores[id].append(reward)
+        else:
+            self.scores[id] = [reward]
+        return np.median(self.scores[id]), visit + 1
 
 class Besa(UCT):
     def __init__(self):

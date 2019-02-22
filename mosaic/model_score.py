@@ -1,6 +1,7 @@
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
 import numpy as np
 import pickle, os
 
@@ -14,6 +15,8 @@ class ScoreModel():
         self.id_most_import_class = id_most_import_class
         self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_score.p")
         self.dataset_features = dataset_features
+
+        self.active_general_model = False
 
         if X is not None and y is not None:
             self.X = X
@@ -75,9 +78,13 @@ class ScoreModel():
                 x_pred = self.model.predict(X)
                 list_pred.append(x_pred)
         elif model == "general":
-            for estimator in self.model_general.estimators_:
-                x_pred = self.model_general.predict([np.concatenate([x, self.dataset_features]) for x in X])
-                list_pred.append(x_pred)
+            try:
+                for estimator in self.model_general.estimators_:
+                    x_pred = self.model_general.predict([np.concatenate([x, self.dataset_features]) for x in X])
+                    list_pred.append(x_pred)
+            except Exception as e:
+                return np.zeros(len(X)), np.zeros(len(X))
+
         elif model == "time":
             for estimator in self.model_of_time.estimators_:
                 x_pred = self.model_of_time.predict(X)

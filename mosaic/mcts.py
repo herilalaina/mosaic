@@ -44,6 +44,12 @@ class MCTS():
         # iteration logging
         self.n_iter = 0
 
+        if "proba" in policy_arg:
+            self.env.proba_expert = policy_arg["proba"]
+
+        if "coef_progressive_widening" in policy_arg:
+            self.tree.coef_progressive_widening = policy_arg["coef_progressive_widening"]
+
 
     def reset(self, time_budget=3600):
         self.time_budget = time_budget
@@ -121,17 +127,35 @@ class MCTS():
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
 
+    def create_node_for_algorithm(self):
+        id_class = {}
+        for cl in ["bernoulli_nb", "multinomial_nb",
+                    "decision_tree", "gaussian_nb", "sgd",
+                    "passive_aggressive", "xgradient_boosting",
+                    "adaboost", "extra_trees", "gradient_boosting",
+                    "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
+            id_class[cl] = self.tree.add_node(name="classifier:__choice__", value=cl, terminal=False, parent_node = 0)
+        return id_class
+
     def run(self, n = 1, intial_configuration = [], generate_image_path = ""):
         start_run = time.time()
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
                 self.env.run_default_configuration()
                 self.env.check_time()
-                #if len(intial_configuration) > 0:
-                self.env.run_initial_configuration(intial_configuration)
-                #else:
-                self.env.check_time()
-                self.env.run_main_configuration()
+                if len(intial_configuration) > 0:
+                    id_class = self.create_node_for_algorithm()
+                    score_each_cl = self.env.run_initial_configuration(intial_configuration)
+                    for cl, vals in score_each_cl.items():
+                        if len(vals) > 0:
+                            [self.BACKUP(id_class[cl], s) for s in vals]
+                    score_each_cl = self.env.run_main_configuration()
+                    for cl, vals in score_each_cl.items():
+                        if len(vals) > 0:
+                            [self.BACKUP(id_class[cl], s) for s in vals]
+                else:
+                    self.env.check_time()
+                    self.env.run_main_configuration()
 
                 #dump_cutoff = self.env.cpu_time_in_s
                 #self.env.cpu_time_in_s = 10
