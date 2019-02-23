@@ -115,7 +115,7 @@ class ScoreModel():
     def fit(self):
         sample_weight = self._get_sample_weight()
         self.model.fit(self.X, self.y, sample_weight=sample_weight)
-        self.model_of_time.fit(self.X, self.y_time, sample_weight=sample_weight)
+        #self.model_of_time.fit(self.X, self.y_time, sample_weight=sample_weight)
         self.model_general.fit([np.concatenate([x, self.dataset_features])  for x in self.X], self.y)
 
     def importance_variable(self):

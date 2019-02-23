@@ -1,27 +1,32 @@
 """Monte carlo tree seach class."""
 
 import logging
+import os
 import gc
 import time
 import numpy as np
+import json
 
 from mosaic.strategy.policy import UCT, Besa, PUCT
 from mosaic.node import Node
 from mosaic.utils import Timeout
 from mosaic.utils import get_index_percentile
+from networkx.readwrite.gpickle import write_gpickle
 
 
 class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="puct",
+                 policy="uct",
                  time_budget=3600,
                  multi_fidelity = False,
-                 policy_arg = None):
+                 policy_arg = None,
+                 exec_dir = ""):
         self.env = env
         self.time_budget = time_budget
         self.multi_fidelity = multi_fidelity
+        self.exec_dir = exec_dir
 
         # Init tree
         self.tree = Node()
@@ -62,6 +67,14 @@ class MCTS():
         reward = self.PLAYOUT(front)
         self.BACKUP(front, reward)
         self.n_iter += 1
+
+        self.env.score_model.save_data(self.exec_dir)
+
+        write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
+
+        with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
+            json.dump(self.env.history_score, outfile)
+
 
     def TREEPOLICY(self):
         """Selection using policy."""

@@ -412,7 +412,8 @@ class ConfigSpace_env():
         except Exception as e:
             #self.logger.critical(e)
             print(e)
-            raise(e)
+            res = None
+            #raise(e)
 
         if res is None:
             res = {"validation_score": 0, "info": None}
@@ -441,6 +442,7 @@ class ConfigSpace_env():
             raise(e)
 
     def check_time(self):
+        return True
         if time.time() - self.start_time < 3600:
             return True
         else:
@@ -460,7 +462,7 @@ class ConfigSpace_env():
             id_score[config["classifier:__choice__"]].append(score)
             if time.time() - st_time > 50:
                 continue
-            for _ in range(5):
+            for _ in range(1):
                 self.check_time()
                 config = self.config_space.sample_partial_configuration([("classifier:__choice__", cl)])
                 score = self._evaluate(config)

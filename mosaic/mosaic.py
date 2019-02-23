@@ -15,7 +15,8 @@ class Search:
                  use_parameter_importance=False,
                  problem_features = [],
                  seed = 1,
-                 policy_arg = {}):
+                 policy_arg = {},
+                 exec_dir = ""):
         env = ConfigSpace_env(eval_func,
                               config_space=config_space,
                               mem_in_mb=mem_in_mb,
@@ -27,7 +28,8 @@ class Search:
         self.mcts = MCTS(env = env,
                          time_budget=time_budget,
                          multi_fidelity=multi_fidelity,
-                         policy_arg = policy_arg)
+                         policy_arg = policy_arg,
+                         exec_dir = exec_dir)
 
         # config logger
         self.logger = logging.getLogger('mcts')
