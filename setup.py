@@ -1,4 +1,5 @@
-from setuptools import setup
+from setuptools import find_packages, setup
+from package import Package
 
 setup(name='mosaic',
       version='0.1',
@@ -7,5 +8,9 @@ setup(name='mosaic',
       author='Herilalaina Rakotoarison',
       author_email='heri@lri.fr',
       license='BSD-3',
-      packages=['mosaic'],
-      zip_safe=False)
+      packages=find_packages(),
+      include_package_data=True,
+      cmdclass={
+        "package": Package
+      }
+)
