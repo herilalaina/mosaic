@@ -18,7 +18,7 @@ class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="uct",
+                 policy="puct",
                  time_budget=3600,
                  multi_fidelity = False,
                  policy_arg = None,
@@ -157,15 +157,16 @@ class MCTS():
                 self.env.run_default_configuration()
                 self.env.check_time()
                 if len(intial_configuration) > 0:
+                    executed_config = self.env.run_default_all()
                     id_class = self.create_node_for_algorithm()
-                    score_each_cl = self.env.run_initial_configuration(intial_configuration)
+                    score_each_cl = self.env.run_initial_configuration(intial_configuration, executed_config)
                     for cl, vals in score_each_cl.items():
                         if len(vals) > 0:
                             [self.BACKUP(id_class[cl], s) for s in vals]
-                    score_each_cl = self.env.run_main_configuration()
-                    for cl, vals in score_each_cl.items():
-                        if len(vals) > 0:
-                            [self.BACKUP(id_class[cl], s) for s in vals]
+                    #score_each_cl = self.env.run_main_configuration()
+                    #for cl, vals in score_each_cl.items():
+                    #    if len(vals) > 0:
+                    #        [self.BACKUP(id_class[cl], s) for s in vals]
                 else:
                     self.env.check_time()
                     self.env.run_main_configuration()

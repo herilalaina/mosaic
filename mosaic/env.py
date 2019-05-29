@@ -5,6 +5,7 @@ import pynisher
 import os, sys
 import numpy as np
 import pickle as pkl
+import json
 
 from mosaic.utils import expected_improvement, probability_improvement
 from mosaic.model_score import ScoreModel
@@ -203,8 +204,8 @@ class ConfigSpace_env():
 
         #ei_values = np.array([mu_gener * beta + (1 - beta) * mu_local for mu_gener, mu_local in zip(mu, mu_loc)])
 
-        id_max = (-ei_values).argsort()[:100]
-        return [configs[np.random.choice(id_max)] for _ in range(200)]
+        id_max = (-ei_values).argsort()[:3]
+        return [configs[np.random.choice(id_max)] for _ in range(3)]
 
 
     def rollout_with_model_performance(self, history=[]):
@@ -321,7 +322,7 @@ class ConfigSpace_env():
                 if next_param_v not in value_to_choose and next_param_v not in [v[1] for v in info_childs if v[0] == next_param]:
                     tmp_config = []
                     try:
-                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)], 300)
+                        ex_config = self.config_space.sample_partial_configuration(history + [(next_param, next_param_v)], 10000)
                         tmp_config = np.nan_to_num([c.get_array() for c in ex_config])
                         #if next_param_v not in value_to_choose:
                         #    tmp_config.append(vect_config)
@@ -397,6 +398,7 @@ class ConfigSpace_env():
         return preprocessed_moves
 
     def _evaluate(self, config, type="normal"):
+        self.check_time()
         self.id += 1
         start_time = time.time()
         if type == "normal":
@@ -409,11 +411,11 @@ class ConfigSpace_env():
             res = eval_func(config, self.bestconfig, self.id)
             self.sucess_run += 1
 
-        except Exception as e:
+        except Timeout.Timeout as e:
             #self.logger.critical(e)
             print(e)
             res = None
-            #raise(e)
+            raise(e)
 
         if res is None:
             res = {"validation_score": 0, "info": None}
@@ -442,11 +444,23 @@ class ConfigSpace_env():
             raise(e)
 
     def check_time(self):
-        return True
         if time.time() - self.start_time < 3600:
             return True
         else:
             raise Timeout.Timeout("Finished")
+
+
+    def run_default_all(self):
+        print("Run default configuration")
+
+        set_config = set()
+        for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors"]:
+            config = self.config_space.sample_partial_configuration_with_default([("classifier:__choice__", cl)])
+            self.check_time()
+            score = self._evaluate(config)
+            set_config.add(config)
+        return set_config
+
 
 
     def run_main_configuration(self):
@@ -473,15 +487,16 @@ class ConfigSpace_env():
         print("Run random configuration")
         self._evaluate(self.config_space.sample_configuration())
 
-    def run_initial_configuration(self, intial_configuration):
+    def run_initial_configuration(self, intial_configuration, already_executed = set({})):
         print("Run initial configuration")
         id_score = {}
         for cl in ["bernoulli_nb", "multinomial_nb", "decision_tree", "gaussian_nb", "sgd", "passive_aggressive", "xgradient_boosting", "adaboost", "extra_trees", "gradient_boosting", "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
             id_score[cl] = []
         for c in intial_configuration:
-            self.check_time()
-            score = self._evaluate(c)
-            id_score[c["classifier:__choice__"]].append(score)
+            if c not in already_executed:
+                self.check_time()
+                score = self._evaluate(c)
+                id_score[c["classifier:__choice__"]].append(score)
 
         return id_score
 
@@ -540,23 +555,32 @@ class ConfigSpace_env():
     def get_nearest_data(self, id):
         ids = []
         ranks = []
-        for f_ in glob.glob("/scratch/hrakotoa/mosaic_metadata/*"):
+        for f_ in glob.glob("/scratch/hrakotoa/mosaic_metadata/metadata_*"):
             with open(f_, 'r') as f:
-                id_data = int(f_.split("metadata_")[1])
-                reader = csv.reader(f)
-                for row in reader:
-                    ranks.append([ float(i) for i in row ])
-                    ids.append(id_data)
+                if "metadata_mosaic_" not in f_:
+                    id_data = int(f_.split("metadata_")[1])
+                    if id_data not in [3021, 3573, 3946, 3948, 14967]:
+                        reader = csv.reader(f)
+                        for row in reader:
+                            ranks.append([ float(i) for i in row ])
+                            ids.append(id_data)
         ranks = np.array(ranks)
         X_sim = cosine_similarity(ranks)
 
-        self.score_model.dataset_features = ranks[ids.index(id)]
+        if id in ids:
+            self.score_model.dataset_features = ranks[ids.index(id)]
+        else:
+            return list(np.random.choice(ids, 5))
 
         sim_for_data = X_sim[ids.index(id)]
 
-        id_nears = sim_for_data.argsort()[-10:-1][::-1]
+        id_nears = sim_for_data.argsort()[-6:-1][::-1]
         return [ids[id_near] for id_near in id_nears], [ranks[id_near] for id_near in id_nears]
 
+    def get_metadata_mosaic(self, id):
+        path_to_dump = os.path.join("/scratch/hrakotoa/mosaic_metadata/", "metadata_mosaic_{0}".format(id))
+        data = json.load(open(path_to_dump, "r"))
+        return data
 
     def get_test_performance_neighbors(self, id):
         id_neighborhoods, features = self.get_nearest_data(id)
@@ -575,9 +599,28 @@ class ConfigSpace_env():
         return X, Y
 
     def load_metalearning_x_y(self, id):
-        X, y = self.get_test_performance_neighbors(id)
-        self.score_model.active_general_model = True
-        self.score_model.model_general.fit(X, y)
+        #X, y = self.get_test_performance_neighbors(id)
+        #self.score_model.active_general_model = True
+        #self.score_model.model_general.fit(X, y)
+        id_neighborhoods, features = self.get_nearest_data(id)
+
+        configs = []
+
+        list_config = []
+        config_set = set()
+        for i_, id_n in enumerate(id_neighborhoods):
+            list_config.append(self.get_metadata_mosaic(id_n))
+        for cl in ["random_forest", "xgradient_boosting", "adaboost", "extra_trees", "libsvm_svc"]:
+            for c in list_config:
+                try:
+                    configuration = Configuration(configuration_space=self.config_space, values=c[cl], allow_inactive_with_values=True)
+                    if configuration not in config_set:
+                        config_set.add(configuration)
+                        configs.append(configuration)
+
+                except Exception as e:
+                    print(e)
+        return configs
 
     def log_result(self, res, config):
         run = res

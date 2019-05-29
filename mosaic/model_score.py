@@ -57,7 +57,7 @@ class ScoreModel():
             raise(e)
             output = {"mean": 0, "std": 0}
 
-        try:
+        """try:
             list_pred = []
             for estimator in self.model_of_time.estimators_:
                 x_pred = estimator.predict([x])
@@ -67,7 +67,7 @@ class ScoreModel():
         except Exception as e:
             print(e)
             output["mean_runtime"] = 0
-            output["std_runtime"] = 0
+            output["std_runtime"] = 0"""
 
         return output
 
