@@ -24,8 +24,11 @@ from pynisher import TimeoutException, MemorylimitException
 from mosaic.utils import Timeout
 
 
-class ConfigSpace_env():
+class Environment():
     """Base class for environement."""
+
+
+class ConfigSpace_env():
 
     def __init__(self, eval_func,
                  config_space,
