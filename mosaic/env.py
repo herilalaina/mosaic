@@ -12,10 +12,9 @@ from mosaic.model_score import ScoreModel
 from mosaic.utils import Timeout, get_index_percentile
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
-from ConfigSpace.util import get_one_exchange_neighbourhood_with_history, get_one_exchange_neighbourhood
+from mosaic.external.ConfigSpace.util import get_one_exchange_neighbourhood_with_history
 from ConfigSpace import Configuration
 
-import traceback
 import logging
 import glob
 import csv

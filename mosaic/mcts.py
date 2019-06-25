@@ -100,7 +100,7 @@ class MCTS():
 
     def EXPAND(self, node):
         """Expand child node."""
-        st_time=time.time()
+        st_time = time.time()
         name, value, terminal = self.policy.expansion(self.env.next_moves,
                                                               [self.tree.get_path_to_node(node),
                                                                self.tree.get_childs(node, info = ["name", "value"])])
