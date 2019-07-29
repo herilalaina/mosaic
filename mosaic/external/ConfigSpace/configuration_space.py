@@ -1022,9 +1022,6 @@ class ConfigurationSpace(object):
                     hyperparameter = self._hyperparameters[hp_name]
                     vector[:, i] = hyperparameter._sample(self.random, missing)
 
-            for i in [117, 120, 122, 132]:
-                
-
             for i in range(missing):
                 try:
                     configuration = Configuration(

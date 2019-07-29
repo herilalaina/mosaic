@@ -1,5 +1,5 @@
 
-from mosaic.env import ConfigSpace_env
+from mosaic.env import ConfigSpaceEnv
 from mosaic.mcts import MCTS
 import logging
 
@@ -30,7 +30,7 @@ class Search:
         :param policy_arg: specific option for MCTS policy
         :param exec_dir: directory to store tmp files
         """
-        env = ConfigSpace_env(eval_func,
+        env = ConfigSpaceEnv(eval_func,
                               config_space=config_space,
                               mem_in_mb=mem_in_mb,
                               cpu_time_in_s=cpu_time_in_s,

@@ -2,14 +2,13 @@
 
 import time
 import pynisher
-import os, sys
+import os
 import numpy as np
-import pickle as pkl
 import json
 
 from mosaic.utils import expected_improvement, probability_improvement
 from mosaic.model_score import ScoreModel
-from mosaic.utils import Timeout, get_index_percentile
+from datetime import datetime
 
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
 from mosaic.external.ConfigSpace.util import get_one_exchange_neighbourhood_with_history
@@ -20,15 +19,174 @@ import glob
 import csv
 from sklearn.metrics.pairwise import cosine_similarity
 
-from pynisher import TimeoutException, MemorylimitException
 from mosaic.utils import Timeout
 
 
-class Environment():
-    """Base class for environement."""
+class AbstractEnvironment:
+    def __init__(self, eval_func,
+                 config_space,
+                 mem_in_mb=3024,
+                 cpu_time_in_s=300,
+                 seed = 1):
+        """Abstract class for environment
+
+        :param eval_func: evaluation function
+        :param config_space: configuration space
+        :param mem_in_mb: memory budget
+        :param cpu_time_in_s: time budget for each run
+        :param seed: random seed
+        """
+        self.eval_func = eval_func
+        self.config_space = config_space
+        self.mem_in_mb = mem_in_mb
+        self.cpu_time_in_s = cpu_time_in_s
+        self.seed = seed
+        self.start_time = time.time()
+        self.rng = np.random.RandomState(seed)
+
+    def rollout(self, history = []):
+        """Rollout method to generate complete configuration starting with `history`
+
+        :param history: current incomplete configuration
+        :return: sampled configuration
+        """
+        raise NotImplemented
+
+    def next_moves(self, history=[], info_childs=[]):
+        """Method to generate the next parameter to tune
+
+        :param history: current incomplete configuration
+        :param info_childs: information about children
+        :return: tuple (next_param, value_param, is_terminal)
+        """
+        raise NotImplemented
+
+    def reset(self, **kwargs):
+        """Reset environment
+
+        :param kwargs: parameter to reset environment, optional
+        """
+        pass
+
+    def _evaluate(self, config):
+        """Method to evaluate one configuration
+
+        :param config: configuration to evaluate
+        :return: performance of the configuration
+        """
+        raise NotImplemented
+
+    def get_nb_childs(self, parameter, value):
+        """Get the number of
+
+        :param parameter:
+        :param value:
+        :return: maximum number of children
+        """
+        raise NotImplemented
+
+    def _check_if_same_pipeline(self, pip1, pip2):
+        return set(pip1) != set(pip2)
+
+    def _has_finite_child(self, history=[]):
+        rollout = self.rollout(history)
+        return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
+
+    def __str__(self):
+        return "Environment: %s\n\t" \
+               "-> evaluation function: %s \n\t" \
+               "-> memory limit: %s Mb\n\t" \
+               "-> cpu time limit for each run: %s sec\n\t" \
+               "-> start time: %s (UTC)" % (self.__class__.__name__, self.eval_func, self.mem_in_mb, self.cpu_time_in_s,
+                                  datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))
 
 
-class ConfigSpace_env():
+class Environment(AbstractEnvironment):
+
+    def __init__(self, eval_func,
+                 config_space,
+                 mem_in_mb=3024,
+                 cpu_time_in_s=300,
+                 seed = 1):
+        super().__init__(eval_func, config_space, mem_in_mb, cpu_time_in_s, seed)
+
+    def rollout(self, history = []):
+        """Rollout method to generate complete configuration starting with `history`
+
+        :param history: current incomplete configuration
+        :return: sampled configuration
+        """
+        while True:
+            try:
+                return self.config_space.sample_partial_configuration_with_default(history)
+            except Exception:
+                pass
+
+    def next_moves(self, history=[], info_childs=[]):
+        """Method to generate the next parameter to tune
+
+        :param history: current incomplete configuration
+        :param info_childs: information about children
+        :return: tuple (next_param, value_param, is_terminal)
+        """
+        try:
+
+            possible_params_ = list(self.config_space.get_possible_next_params(history))
+            possible_params = self._can_be_selectioned(possible_params_, [v[0] for v in info_childs], history)
+
+            id_param = np.random.randint(0, len(possible_params))
+            next_param = possible_params[id_param]
+
+            next_param_cs = self.config_space._hyperparameters[next_param]
+
+            if isinstance(next_param_cs, CategoricalHyperparameter):
+                list_choice = next_param_cs.choices
+            else:
+                list_choice = [next_param_cs.sample(self.rng) for _ in range(10)]
+
+            value_param = np.random.choice(list_choice)
+
+            history.append((next_param, value_param))
+        except Exception as e:
+            raise(e)
+
+        possible_params.remove(next_param)
+        is_terminal = len(possible_params) == 0
+        return next_param, value_param, is_terminal
+
+    def _can_be_selectioned(self, possible_params, child_info, history):
+        history_ens = [v[0] for v in history]
+        params_to_check = set(history_ens).intersection(set(possible_params))
+        if len(params_to_check) > 0:
+            for p in params_to_check:
+                possible_params.remove(p)
+                buffer = set()
+                p_cs = self.config_space.get_hyperparameter(p)
+                for new_val in p_cs.choices:
+                    try:
+                        self.config_space.sample_partial_configuration(history + [(p, new_val)])
+                        buffer.add(new_val)
+                    except Exception:
+                        pass
+
+                if len([param for param in child_info if param == p]) < len(buffer):
+                    possible_params.append(p)
+
+        return possible_params
+
+    def get_nb_childs(self, parameter, value):
+        return 20
+
+    def _evaluate(self, config):
+        print(config)
+
+        eval_func = pynisher.enforce_limits(mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)
+        res = eval_func(config)
+
+        return res
+
+
+class ConfigSpaceEnv(AbstractEnvironment):
 
     def __init__(self, eval_func,
                  config_space,
@@ -46,8 +204,6 @@ class ConfigSpace_env():
         self.start_time = time.time()
         self.config_space = config_space
         self.use_parameter_importance = use_parameter_importance
-        self.multi_objective = multi_objective
-
         # Constrained evaluation
         self.max_eval_time = cpu_time_in_s
         self.cpu_time_in_s = cpu_time_in_s
@@ -122,7 +278,7 @@ class ConfigSpace_env():
         self.history_score = []
         self.current_rollout = None
 
-    def rollout(self, history = []):
+    def rollout_(self, history = []):
         while True:
             try:
                 return self.config_space.sample_partial_configuration_with_default(history)
@@ -136,8 +292,6 @@ class ConfigSpace_env():
             for p, p_problem in zip([117, 120, 122, 132], self.problem_dependant_param):
                 if p_problem in config:
                     arr[p_problem] = min([config[p_problem], 10])
-                    #if config[p_problem] > self.problem_dependant_value[config["categorical_encoding:__choice__"]]:
-                        #config[p_problem] = self.config_space.get_hyperparameter(p_problem)._transform(10)
 
 
             if not self.problem_dependant_value["is_positive"]:
@@ -172,7 +326,7 @@ class ConfigSpace_env():
     def is_metalearning(self):
         return self.score_model.active_general_model
 
-    def rollout_in_expert_neighborhood(self, history = []):
+    def rollout(self, history = []):
         print("[Proba expert: {0}]".format(self.proba_expert))
         try:
             expert, _ = self.experts[tuple(history)]
@@ -180,10 +334,6 @@ class ConfigSpace_env():
             expert = self.config_space.sample_partial_configuration_with_default(history)
 
         try:
-            #configs = [c_f for c_f in
-            #    [get_one_exchange_neighbourhood_with_history(c_i, self.seed, history) for c_i in
-            #        [c for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history)]
-            #]]
             configs = []
             print("[Rollout] Neighborhood on", expert.get_dictionary())
             for c in get_one_exchange_neighbourhood_with_history(expert, self.seed, history):
@@ -198,13 +348,6 @@ class ConfigSpace_env():
 
         mu_loc, sigma_loc = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
         ei_values = expected_improvement(mu_loc, sigma_loc, self.bestconfig["validation_score"])
-        #mu_time, sigma_time = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "time")
-
-        #if self.is_metalearning:
-        #    beta = self.get_beta()
-        #    mu_gen, sigma_gen = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "general")
-
-        #ei_values = np.array([mu_gener * beta + (1 - beta) * mu_local for mu_gener, mu_local in zip(mu, mu_loc)])
 
         id_max = (-ei_values).argsort()[:3]
         return [configs[np.random.choice(id_max)] for _ in range(3)]
@@ -263,38 +406,15 @@ class ConfigSpace_env():
         mu, sigma = self.score_model.get_mu_sigma_from_rf(np.array(list_configuration_to_choose), "local")
         return np.mean(mu)
 
-    def can_be_selectioned(self, possible_params, child_info, history):
-        history_ens = [v[0] for v in history]
-        params_to_check = set(history_ens).intersection(set(possible_params))
-        if len(params_to_check) > 0:
-            final_available_param = possible_params
-            for p in params_to_check:
-                possible_params.remove(p)
-                buffer = set()
-                p_cs = self.config_space.get_hyperparameter(p)
-                for new_val in p_cs.choices:
-                    try:
-                        self.config_space.sample_partial_configuration(history + [(p, new_val)])
-                        buffer.add(new_val)
-                    except Exception as e:
-                        pass
-
-                if len([param for param in child_info if param == p]) < len(buffer):
-                    possible_params.append(p)
-
-        return possible_params
-
 
 
     def next_moves(self, history=[], info_childs=[]):
         st_time = time.time()
         try:
-            #config = self.config_space.sample_partial_configuration(history)
 
             possible_params_ = list(self.config_space.get_possible_next_params(history))
             possible_params_ = list(set(possible_params_).intersection(set(self.main_hyperparameter)))
-            possible_params = self.can_be_selectioned(possible_params_, [v[0] for v in info_childs], history)
-            #print("Clean possible parameter ", time.time() - st_time)
+            possible_params = self._can_be_selectioned(possible_params_, [v[0] for v in info_childs], history)
 
             if set(self.main_hyperparameter).intersection(set(possible_params)):
                 for main_p in self.main_hyperparameter:
@@ -524,13 +644,6 @@ class ConfigSpace_env():
             else:
                 count_dict[hyp] = 100
         return count_dict
-
-    def _check_if_same_pipeline(self, pip1, pip2):
-        return set(pip1) != set(pip2)
-
-    def has_finite_child(self, history=[]):
-        rollout = self.rollout(history)
-        return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
     def add_to_final_model(self, config):
         self.final_model.append(config)

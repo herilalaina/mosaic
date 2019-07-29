@@ -68,12 +68,12 @@ class MCTS():
         self.BACKUP(front, reward)
         self.n_iter += 1
 
-        self.env.score_model.save_data(self.exec_dir)
+        #self.env.score_model.save_data(self.exec_dir)
 
-        write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
+        #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
 
-        with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
-            json.dump(self.env.history_score, outfile)
+        #with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
+        #    json.dump(self.env.history_score, outfile)
 
 
     def TREEPOLICY(self):
@@ -113,19 +113,13 @@ class MCTS():
         """Playout policy."""
 
         st_time = time.time()
-        playout_nodes = self.env.rollout_in_expert_neighborhood(self.tree.get_path_to_node(node_id))
-        print("Playout: ", time.time() - st_time, " sec")
+        playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
 
-        st_time = time.time()
-        for i, playout_node in enumerate(playout_nodes):
-            print("PLAYOUT ", i)
-            st_time_playout = time.time()
-            score = self.policy.evaluate(self.env._evaluate, [playout_node])
-            if score > 0:
-                self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
-                return score
-            elif time.time() - st_time_playout > 200:
-                break
+        score = self.policy.evaluate(self.env._evaluate, [playout_node])
+        if score > 0:
+            self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
+            return score
+
         print("Evaluate: ", time.time() - st_time, " sec")
 
         self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, 0))
@@ -154,7 +148,7 @@ class MCTS():
         start_run = time.time()
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
-                self.env.run_default_configuration()
+                """self.env.run_default_configuration()
                 self.env.check_time()
                 if len(intial_configuration) > 0:
                     executed_config = self.env.run_default_all()
@@ -163,18 +157,10 @@ class MCTS():
                     for cl, vals in score_each_cl.items():
                         if len(vals) > 0:
                             [self.BACKUP(id_class[cl], s) for s in vals]
-                    #score_each_cl = self.env.run_main_configuration()
-                    #for cl, vals in score_each_cl.items():
-                    #    if len(vals) > 0:
-                    #        [self.BACKUP(id_class[cl], s) for s in vals]
                 else:
                     self.env.check_time()
-                    self.env.run_main_configuration()
+                    self.env.run_main_configuration()"""
 
-                #dump_cutoff = self.env.cpu_time_in_s
-                #self.env.cpu_time_in_s = 10
-                # [self.env.run_random_configuration() for i in range(50)]
-                #self.env.cpu_time_in_s = dump_cutoff
 
                 if self.multi_fidelity:
                     self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
