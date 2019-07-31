@@ -48,22 +48,7 @@ class Node():
 
         current_node = self.get_info_node(node_id)
 
-        """if current_node["name"].startswith("classifier:__choice__"):
-            max_number_of_child = env.max_nb_child_main_parameter[current_node["name"] + ":" + current_node["value"]]
-
-        elif current_node["name"] in env.max_nb_child_main_parameter:
-            max_number_of_child = env.max_nb_child_main_parameter[current_node["name"]]
-        else:
-            max_number_of_child = 20"""
-
-
-
-        """if current_node["name"] == "root":
-            nb_child_allowed = 20
-        else:
-            nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), self.coef_progressive_widening))"""
-
-        max_number_of_child = env.get_nb_childs(current_node["name"], current_node["value"])
+        max_number_of_child = env.get_nb_childs(current_node["name"], current_node["value"], self.get_path_to_node(node_id))
         nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), self.coef_progressive_widening))
         nb_current_childs = len(list(self.tree.successors(node_id)))
 

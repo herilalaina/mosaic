@@ -18,14 +18,12 @@ class MCTS():
     """Monte carlo tree search implementation."""
 
     def __init__(self, env,
-                 policy="puct",
+                 policy="uct",
                  time_budget=3600,
-                 multi_fidelity = False,
-                 policy_arg = None,
-                 exec_dir = ""):
+                 policy_arg=None,
+                 exec_dir=""):
         self.env = env
         self.time_budget = time_budget
-        self.multi_fidelity = multi_fidelity
         self.exec_dir = exec_dir
 
         # Init tree
@@ -55,30 +53,31 @@ class MCTS():
         if "coef_progressive_widening" in policy_arg:
             self.tree.coef_progressive_widening = policy_arg["coef_progressive_widening"]
 
-
     def reset(self, time_budget=3600):
         self.time_budget = time_budget
         self.n_iter = 0
 
     def MCT_SEARCH(self):
         """Monte carlo tree search iteration."""
-        self.logger.info("#########################Iteration={0}##################################".format(self.n_iter))
+        self.logger.info(
+            "#########################Iteration={0}##################################".format(self.n_iter))
         front = self.TREEPOLICY()
-        reward = self.PLAYOUT(front)
+        reward, config = self.PLAYOUT(front)
         self.BACKUP(front, reward)
         self.n_iter += 1
 
-        #self.env.score_model.save_data(self.exec_dir)
+        # self.env.score_model.save_data(self.exec_dir)
 
         #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
 
-        #with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
+        # with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
         #    json.dump(self.env.history_score, outfile)
 
+        return reward, config
 
     def TREEPOLICY(self):
         """Selection using policy."""
-        node = 0 # Root of the tree
+        node = 0  # Root of the tree
         while not self.tree.is_terminal(node):
             if len(self.tree.get_childs(node)) == 0:
                 return self.EXPAND(node)
@@ -94,7 +93,7 @@ class MCTS():
                                                  [x[0] for x in children],
                                                  [x[1] for x in children],
                                                  [x[2] for x in children],
-                                                 state = self.tree.get_path_to_node(node))
+                                                 state=self.tree.get_path_to_node(node))
                     self.logger.info("Selection\t node={0}".format(node))
         return node
 
@@ -102,11 +101,13 @@ class MCTS():
         """Expand child node."""
         st_time = time.time()
         name, value, terminal = self.policy.expansion(self.env.next_moves,
-                                                              [self.tree.get_path_to_node(node),
-                                                               self.tree.get_childs(node, info = ["name", "value"])])
-        id = self.tree.add_node(name=name, value=value, terminal=terminal, parent_node = node)
-        print("Expand: ", time.time() - st_time, " sec")
-        self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(id, name, value, terminal))
+                                                      [self.tree.get_path_to_node(node),
+                                                       self.tree.get_childs(node, info=["name", "value"])])
+        id = self.tree.add_node(name=name, value=value,
+                                terminal=terminal, parent_node=node)
+        #print("Expand: ", time.time() - st_time, " sec")
+        self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(
+            id, name, value, terminal))
         return id
 
     def PLAYOUT(self, node_id):
@@ -117,62 +118,62 @@ class MCTS():
 
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
         if score > 0:
-            self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, score))
-            return score
+            self.logger.info(
+                "Playout\t param={0}\t score={1}".format(playout_node, score))
+            return score, playout_node
 
         print("Evaluate: ", time.time() - st_time, " sec")
 
-        self.logger.info("Playout\t param={0}\t score={1}".format(playout_node, 0))
-        return 0
-
+        self.logger.info(
+            "Playout\t param={0}\t score={1}".format(playout_node, 0))
+        return 0, playout_node
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
         for parent in self.tree.get_path_to_node(node_id=node, name=False):
-            vl, vs = self.tree.get_attribute(parent, "reward"), self.tree.get_attribute(parent, "visits")
-            new_val, new_vis = self.policy.backpropagate(parent, vl, vs, reward)
+            vl, vs = self.tree.get_attribute(
+                parent, "reward"), self.tree.get_attribute(parent, "visits")
+            new_val, new_vis = self.policy.backpropagate(
+                parent, vl, vs, reward)
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
 
     def create_node_for_algorithm(self):
         id_class = {}
         for cl in ["bernoulli_nb", "multinomial_nb",
-                    "decision_tree", "gaussian_nb", "sgd",
-                    "passive_aggressive", "xgradient_boosting",
-                    "adaboost", "extra_trees", "gradient_boosting",
-                    "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
-            id_class[cl] = self.tree.add_node(name="classifier:__choice__", value=cl, terminal=False, parent_node = 0)
+                   "decision_tree", "gaussian_nb", "sgd",
+                   "passive_aggressive", "xgradient_boosting",
+                   "adaboost", "extra_trees", "gradient_boosting",
+                   "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
+            id_class[cl] = self.tree.add_node(
+                name="classifier:__choice__", value=cl, terminal=False, parent_node=0)
         return id_class
 
-    def run(self, n = 1, intial_configuration = [], generate_image_path = ""):
+    def run(self, n=1, intial_configuration=[], generate_image_path=""):
         start_run = time.time()
+
+        self.bestconfig = None
+        self.bestscore = - np.inf
+
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
-                """self.env.run_default_configuration()
+                self.env.run_default_configuration()
                 self.env.check_time()
-                if len(intial_configuration) > 0:
-                    executed_config = self.env.run_default_all()
-                    id_class = self.create_node_for_algorithm()
-                    score_each_cl = self.env.run_initial_configuration(intial_configuration, executed_config)
-                    for cl, vals in score_each_cl.items():
-                        if len(vals) > 0:
-                            [self.BACKUP(id_class[cl], s) for s in vals]
-                else:
-                    self.env.check_time()
-                    self.env.run_main_configuration()"""
 
-
-                if self.multi_fidelity:
-                    self.env.cpu_time_in_s = int(self.env.cpu_time_in_s / 3)
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
-                        self.MCT_SEARCH()
+                        res, config = self.MCT_SEARCH()
 
-                        if self.multi_fidelity and self.env.cpu_time_in_s < self.env.max_eval_time:
-                            self.env.cpu_time_in_s += 1
+                        if self.exec_dir != "":
+                            img_dir = os.path.join(self.exec_dir, "images")
+                            if not os.path.exists(img_dir):
+                                os.makedirs(img_dir)
+                            self.tree.draw_tree(
+                                os.path.join(img_dir, "step_%s" % i))
 
-                        if generate_image_path != "":
-                            self.tree.draw_tree("{0}/{1}.png".format(generate_image_path, i))
+                        if res > self.bestscore:
+                            self.bestscore = res
+                            self.bestconfig = config
                     else:
                         return 0
                     gc.collect()
