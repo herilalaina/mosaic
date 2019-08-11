@@ -39,7 +39,6 @@ setup(
     author_email='herilalaina.rakotoarison@inria.fr',
     description='Monte-Carlo Tree Search for Algorithm Configuration.',
     version="0.1-beta",
-    ext_modules=extensions,
     packages=find_packages(exclude=['examples']),
     setup_requires=setup_reqs,
     install_requires=install_reqs,
