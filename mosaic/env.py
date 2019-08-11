@@ -75,6 +75,9 @@ class AbstractEnvironment:
         rollout = self.rollout(history)
         return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
+    def run_default_configuration(self):
+        raise NotImplemented
+
     def __str__(self):
         return "Environment: %s\n\t" \
                "-> evaluation function: %s \n\t" \

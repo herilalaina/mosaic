@@ -158,7 +158,6 @@ class MCTS():
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
                 self.env.run_default_configuration()
-                self.env.check_time()
 
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
