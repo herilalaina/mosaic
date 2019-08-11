@@ -12,3 +12,4 @@ pynisher>=0.4.2
 
 matplotlib==2.1.2
 networkx==2.2
+pygraphviz
