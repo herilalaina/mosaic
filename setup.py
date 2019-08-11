@@ -34,9 +34,9 @@ with open(os.path.join(HERE, 'requirements.txt')) as fp:
                     if not r.startswith('#') and not r.startswith('git+')]
 
 setup(
-    name='auto-sklearn',
-    author='Matthias Feurer',
-    author_email='feurerm@informatik.uni-freiburg.de',
+    name='mosaic',
+    author='Herilalaina Rakotoarison',
+    author_email='herilalaina.rakotoarison@inria.fr',
     description='Monte-Carlo Tree Search for Algorithm Configuration.',
     version="0.1-beta",
     ext_modules=extensions,
