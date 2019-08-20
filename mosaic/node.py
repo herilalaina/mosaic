@@ -76,7 +76,10 @@ class Node():
 
     def draw_tree(self, file_name = ""):
         self.update_labels()
-        write_dot(self.tree, file_name + '.dot')
+        try:
+            write_dot(self.tree, file_name + '.dot')
+        except as Exception as e:
+            print(e)
 
     def get_childs(self, node_id, info = []):
         if len(info) == 0:
