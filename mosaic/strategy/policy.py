@@ -4,12 +4,13 @@ import numpy as np
 from mosaic.strategy import BaseStrategy, BaseEarlyStopping
 
 class UCT(BaseStrategy, BaseEarlyStopping):
-    def __init__(self):
+    def __init__(self, C):
         super().__init__()
+        self.C = C
 
     def selection(self, parent, ids, vals, visits, state=None):
         parent_val, parent_vis = parent
-        return ids[np.argmax([(val + math.sqrt(2 * math.log10(parent_vis) / vis)) for vis, val in zip(visits, vals)])]
+        return ids[np.argmax([(val + self.C * math.sqrt(math.log10(parent_vis) / vis)) for vis, val in zip(visits, vals)])]
 
     def playout(self):
         pass

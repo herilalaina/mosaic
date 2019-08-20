@@ -34,7 +34,11 @@ class MCTS():
 
         # Policy
         if policy == "uct":
-            self.policy = UCT()
+            if "c_ucb" in policy_arg:
+                c = policy_arg["c_ub"]
+            else:
+                c = np.sqrt(2)
+            self.policy = UCT(c_ucb)
         elif policy == "besa":
             self.policy = Besa()
         elif policy == "puct":
