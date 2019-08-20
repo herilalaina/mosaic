@@ -35,7 +35,7 @@ class MCTS():
         # Policy
         if policy == "uct":
             if "c_ucb" in policy_arg:
-                c = policy_arg["c_ub"]
+                c = policy_arg["c_ucb"]
             else:
                 c = np.sqrt(2)
             self.policy = UCT(c_ucb)
