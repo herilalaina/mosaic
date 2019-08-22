@@ -78,7 +78,7 @@ class Node():
         self.update_labels()
         try:
             write_dot(self.tree, file_name + '.dot')
-        except as Exception as e:
+        except Exception as e:
             print(e)
 
     def get_childs(self, node_id, info = []):
