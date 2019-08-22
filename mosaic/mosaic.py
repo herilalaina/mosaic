@@ -38,7 +38,8 @@ class Search:
         # self.problem_features = problem_features
 
         # execution directory
-        os.makedirs(exec_dir)
+        if exec_dir:
+            os.makedirs(exec_dir)
 
     def print_config(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
