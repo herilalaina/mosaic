@@ -75,7 +75,7 @@ class AbstractEnvironment:
         try:
             rollout = self.rollout(history)
         except Exception as e:
-            return True
+            return False
         return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
 
     def run_default_configuration(self):
