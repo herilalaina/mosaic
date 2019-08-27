@@ -48,7 +48,7 @@ class Node():
 
         current_node = self.get_info_node(node_id)
 
-        max_number_of_child = env.get_nb_childs(current_node["name"], current_node["value"], self.get_path_to_node(node_id))
+        max_number_of_child = env.get_nb_children(current_node["name"], current_node["value"], self.get_path_to_node(node_id))
         nb_child_allowed = math.floor(math.pow(self.get_attribute(node_id, "visits"), self.coef_progressive_widening))
         nb_current_childs = len(list(self.tree.successors(node_id)))
 

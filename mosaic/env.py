@@ -59,7 +59,7 @@ class AbstractEnvironment:
         """
         raise NotImplemented
 
-    def get_nb_childs(self, parameter, value, current_pipeline):
+    def get_nb_children(self, parameter, value, current_pipeline):
         """Get the number of
 
         :param parameter:
