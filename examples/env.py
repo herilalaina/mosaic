@@ -89,7 +89,7 @@ class Environment(AbstractEnvironment):
     def run_default_configuration(self):
         return self._evaluate(self.config_space.get_default_configuration())
 
-    def get_nb_childs(self, parameter, value, path):
+    def get_nb_children(self, parameter, value, path):
         return 20
 
     def _evaluate(self, config):
