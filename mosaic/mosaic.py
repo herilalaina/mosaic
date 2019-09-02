@@ -30,7 +30,11 @@ class Search:
 
         # config logger
         self.logger = logging.getLogger('mcts')
-        hdlr = logging.FileHandler("mcts.log", mode='w')
+        if exec_dir != "":
+            log_dir = os.path.join(exec_dir, "mcts.log")
+        else:
+            log_dir = "mcts.log"
+        hdlr = logging.FileHandler(log_dir, mode='w')
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         hdlr.setFormatter(formatter)
