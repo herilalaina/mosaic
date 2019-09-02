@@ -1,7 +1,7 @@
 """Base environement class."""
 
 import time
-import datetime
+import datetime.datatime
 import numpy as np
 
 
