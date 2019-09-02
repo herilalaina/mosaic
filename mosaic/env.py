@@ -1,7 +1,7 @@
 """Base environement class."""
 
 import time
-import datetime.datatime
+import datetime
 import numpy as np
 
 
@@ -72,4 +72,4 @@ class AbstractEnvironment:
     def __str__(self):
         return "Environment: %s\n\t" \
                "-> start time: %s (UTC)" % (self.__class__.__name__,
-                                            datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))
+                                            datetime.datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))
