@@ -6,23 +6,11 @@ import numpy as np
 
 
 class AbstractEnvironment:
-    def __init__(self, eval_func,
-                 config_space,
-                 mem_in_mb=3024,
-                 cpu_time_in_s=300,
-                 seed=42):
+    def __init__(self, seed=42):
         """Abstract class for environment
 
-        :param eval_func: evaluation function
-        :param config_space: configuration space
-        :param mem_in_mb: memory budget
-        :param cpu_time_in_s: time budget for each run
         :param seed: random seed
         """
-        self.eval_func = eval_func
-        self.config_space = config_space
-        self.mem_in_mb = mem_in_mb
-        self.cpu_time_in_s = cpu_time_in_s
         self.seed = seed
         self.start_time = time.time()
         self.rng = np.random.RandomState(seed)
@@ -83,8 +71,5 @@ class AbstractEnvironment:
 
     def __str__(self):
         return "Environment: %s\n\t" \
-               "-> evaluation function: %s \n\t" \
-               "-> memory limit: %s Mb\n\t" \
-               "-> cpu time limit for each run: %s sec\n\t" \
-               "-> start time: %s (UTC)" % (self.__class__.__name__, self.eval_func, self.mem_in_mb, self.cpu_time_in_s,
+               "-> start time: %s (UTC)" % (self.__class__.__name__,
                                             datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))
