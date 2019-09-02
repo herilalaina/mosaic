@@ -27,23 +27,21 @@ class Search:
                          time_budget=time_budget,
                          policy_arg=policy_arg,
                          exec_dir=exec_dir)
-
         # config logger
         self.logger = logging.getLogger('mcts')
-        if exec_dir != "":
+
+        # execution directory
+        if exec_dir:
+            os.makedirs(exec_dir)
             log_dir = os.path.join(exec_dir, "mcts.log")
         else:
             log_dir = "mcts.log"
+
         hdlr = logging.FileHandler(log_dir, mode='w')
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
-        # self.problem_features = problem_features
-
-        # execution directory
-        if exec_dir:
-            os.makedirs(exec_dir)
 
     def print_config(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
