@@ -15,8 +15,12 @@ class Environment(AbstractEnvironment):
                  config_space,
                  mem_in_mb=3024,
                  cpu_time_in_s=300,
-                 seed=1):
-        super().__init__(eval_func, config_space, mem_in_mb, cpu_time_in_s, seed)
+                 seed=42):
+        super().__init__(seed)
+        self.eval_func = eval_func
+        self.config_space = config_space
+        self.mem_in_mb = mem_in_mb
+        self.cpu_time_in_s = cpu_time_in_s
 
     def rollout(self, history=[]):
         """Rollout method to generate complete configuration starting with `history`

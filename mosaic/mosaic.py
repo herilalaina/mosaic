@@ -46,10 +46,7 @@ class Search:
     def print_config(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print("logfile = {0}".format(self.logger))
-        print("Memory limit = {0} MB".format(self.mcts.env.mem_in_mb))
-        print("Overall Time Budget = {0}".format(self.mcts.time_budget))
-        print("Evaluation Time Limit = {0}".format(
-            self.mcts.env.cpu_time_in_s))
+        print(self.mcts.env)
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     def run(self, nb_simulation=1, generate_image_path="", intial_configuration=[]):
