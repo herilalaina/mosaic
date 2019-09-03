@@ -1,6 +1,7 @@
 
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from mosaic.mcts import MCTS
 
 
@@ -37,7 +38,7 @@ class Search:
         else:
             log_dir = "mcts.log"
 
-        hdlr = logging.handlers.RotatingFileHandler(log_dir, maxBytes=1024,backupCount=1)
+        hdlr = RotatingFileHandler(log_dir, maxBytes=1024,backupCount=1)
         #logging.FileHandler(log_dir, mode='w')
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
