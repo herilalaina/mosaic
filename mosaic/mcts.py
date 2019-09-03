@@ -95,12 +95,15 @@ class MCTS():
                     children = [[n,
                                  self.tree.get_attribute(n, "reward"),
                                  self.tree.get_attribute(n, "visits")] for n in self.tree.get_childs(node) if not self.tree.get_attribute(n, "invalid")]
-                    node = self.policy.selection((current_node["reward"], current_node["visits"]),
-                                                 [x[0] for x in children],
-                                                 [x[1] for x in children],
-                                                 [x[2] for x in children],
-                                                 state=self.tree.get_path_to_node(node))
-                    self.logger.info("Selection\t node={0}".format(node))
+                    if len(children) >= 0:
+                        node = self.policy.selection((current_node["reward"], current_node["visits"]),
+                                                     [x[0] for x in children],
+                                                     [x[1] for x in children],
+                                                     [x[2] for x in children],
+                                                     state=self.tree.get_path_to_node(node))
+                        self.logger.info("Selection\t node={0}".format(node))
+                    else:
+                        return node
         return node
 
     def EXPAND(self, node):
@@ -122,18 +125,18 @@ class MCTS():
         st_time = time.time()
         try:
             playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
-
-            score = self.policy.evaluate(self.env._evaluate, [playout_node])
-
-            self.logger.info(
-                "Playout\t param={0}\t score={1}\t exec time={2}".format(playout_node, score, time.time() - st_time))
-            return score, playout_node
-
-            print("Evaluate: ", time.time() - st_time, " sec")
         except Exception as e:
             self.logger.info("Add node %s to not possible state: %s" % (node_id, e))
             self.tree.set_attribute(node_id, "invalid", True)
             return 0, None
+
+        score = self.policy.evaluate(self.env._evaluate, [playout_node])
+
+        self.logger.info(
+            "Playout\t param={0}\t score={1}\t exec time={2}".format(playout_node, score, time.time() - st_time))
+        return score, playout_node
+
+        print("Evaluate: ", time.time() - st_time, " sec")
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
