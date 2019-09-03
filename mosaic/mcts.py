@@ -177,9 +177,6 @@ class MCTS():
                             self.bestconfig = config
                     else:
                         return 0
-                    self.logger.info("Begin gc.collect")
-                    gc.collect()
-                    self.logger.info("End gc.collect")
 
                 if self.exec_dir != "":
                     self.tree.draw_tree(
