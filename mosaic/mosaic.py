@@ -37,7 +37,8 @@ class Search:
         else:
             log_dir = "mcts.log"
 
-        hdlr = logging.FileHandler(log_dir, mode='w')
+        hdlr = logging.handlers.RotatingFileHandler(log_dir, maxBytes=1024,backupCount=1)
+        #logging.FileHandler(log_dir, mode='w')
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         hdlr.setFormatter(formatter)
