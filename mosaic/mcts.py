@@ -95,7 +95,7 @@ class MCTS():
                     children = [[n,
                                  self.tree.get_attribute(n, "reward"),
                                  self.tree.get_attribute(n, "visits")] for n in self.tree.get_childs(node) if not self.tree.get_attribute(n, "invalid")]
-                    if len(children) >= 0:
+                    if len(children) > 0:
                         node = self.policy.selection((current_node["reward"], current_node["visits"]),
                                                      [x[0] for x in children],
                                                      [x[1] for x in children],
