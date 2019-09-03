@@ -70,11 +70,11 @@ class MCTS():
         self.BACKUP(front, reward)
         self.n_iter += 1
 
-        if self.exec_dir != "":
-            # self.env.score_model.save_data(self.exec_dir)
-            #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
-            with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
-                json.dump(self.env.history_score, outfile)
+        # if self.exec_dir != "":
+        #     # self.env.score_model.save_data(self.exec_dir)
+        #     #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
+        #     with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
+        #         json.dump(self.env.history_score, outfile)
 
         return reward, config
 
