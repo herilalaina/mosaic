@@ -67,6 +67,9 @@ class MCTS():
             "#########################Iteration={0}##################################".format(self.n_iter))
         front = self.TREEPOLICY()
         reward, config = self.PLAYOUT(front)
+
+        if config is None:
+            return 0, None
         self.BACKUP(front, reward)
         self.n_iter += 1
 
@@ -91,7 +94,7 @@ class MCTS():
                     current_node = self.tree.get_info_node(node)
                     children = [[n,
                                  self.tree.get_attribute(n, "reward"),
-                                 self.tree.get_attribute(n, "visits")] for n in self.tree.get_childs(node)]
+                                 self.tree.get_attribute(n, "visits")] for n in self.tree.get_childs(node) if not self.tree.get_attribute(n, "invalid")]
                     node = self.policy.selection((current_node["reward"], current_node["visits"]),
                                                  [x[0] for x in children],
                                                  [x[1] for x in children],
@@ -117,22 +120,24 @@ class MCTS():
         """Playout policy."""
 
         st_time = time.time()
-        playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
+        try:
+            playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
 
-        score = self.policy.evaluate(self.env._evaluate, [playout_node])
-        if score > 0:
+            score = self.policy.evaluate(self.env._evaluate, [playout_node])
+
             self.logger.info(
                 "Playout\t param={0}\t score={1}\t exec time={2}".format(playout_node, score, time.time() - st_time))
             return score, playout_node
 
-        print("Evaluate: ", time.time() - st_time, " sec")
-
-        self.logger.info(
-            "Playout\t param={0}\t score={1}".format(playout_node, 0))
-        return 0, playout_node
+            print("Evaluate: ", time.time() - st_time, " sec")
+        except Exception as e:
+            self.logger.info("Add node %s to not possible state: %s" % (node_id, e))
+            self.tree.set_attribute(node_id, "invalid", True)
+            return 0, None
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
+        self.logger.info("Begin BACKUP ...")
         for parent in self.tree.get_path_to_node(node_id=node, name=False):
             vl, vs = self.tree.get_attribute(
                 parent, "reward"), self.tree.get_attribute(parent, "visits")
@@ -140,6 +145,7 @@ class MCTS():
                 parent, vl, vs, reward)
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
+        self.logger.info("End BACKUP ...")
 
     def create_node_for_algorithm(self):
         id_class = {}
@@ -166,12 +172,14 @@ class MCTS():
                     if time.time() - self.env.start_time < self.time_budget:
                         res, config = self.MCT_SEARCH()
 
-                        # if res > self.bestscore:
-                        #     self.bestscore = res
-                        #     self.bestconfig = config
+                        if res > self.bestscore:
+                            self.bestscore = res
+                            self.bestconfig = config
                     else:
                         return 0
+                    self.logger.info("Begin gc.collect")
                     gc.collect()
+                    self.logger.info("End gc.collect")
 
                 if self.exec_dir != "":
                     self.tree.draw_tree(

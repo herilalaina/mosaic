@@ -22,17 +22,18 @@ class Node():
         self.id_count += 1
         return self.id_count
 
-    def add_node(self, name=None, value=None, visits=0, reward=0.0, terminal=False, max_number_child=1, parent_node = None):
+    def add_node(self, name=None, value=None, visits=0, reward=0.0, terminal=False, max_number_child=1, parent_node = None, invalid = False):
         new_id = self.get_new_id()
         self.tree.add_node(new_id, name=name, value=value, visits=visits,
                             reward=reward, terminal=terminal,
-                            max_number_child=max_number_child)
+                            max_number_child=max_number_child,
+                            invalid=invalid)
         if parent_node is not None:
             self.tree.add_edge(parent_node, new_id)
         return new_id
 
     def is_terminal(self, node_id):
-        return self.tree.nodes[node_id]["terminal"]
+        return self.tree.nodes[node_id]["terminal"] or self.tree.nodes[node_id]["invalid"]
 
     def get_path_to_node(self, node_id, name = True):
         path = nx.shortest_path(self.tree, source=0, target=node_id)
