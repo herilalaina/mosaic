@@ -70,11 +70,11 @@ class MCTS():
         self.BACKUP(front, reward)
         self.n_iter += 1
 
-        if self.exec_dir != "":
-            # self.env.score_model.save_data(self.exec_dir)
-            #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
-            with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
-                json.dump(self.env.history_score, outfile)
+        # if self.exec_dir != "":
+        #     # self.env.score_model.save_data(self.exec_dir)
+        #     #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
+        #     with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
+        #         json.dump(self.env.history_score, outfile)
 
         return reward, config
 
@@ -122,7 +122,7 @@ class MCTS():
         score = self.policy.evaluate(self.env._evaluate, [playout_node])
         if score > 0:
             self.logger.info(
-                "Playout\t param={0}\t score={1}\t exec time={2}".format(playout_node, score, ))
+                "Playout\t param={0}\t score={1}\t exec time={2}".format(playout_node, score, time.time() - st_time))
             return score, playout_node
 
         print("Evaluate: ", time.time() - st_time, " sec")
@@ -172,12 +172,11 @@ class MCTS():
                     else:
                         return 0
                     gc.collect()
+
                 if self.exec_dir != "":
-                    img_dir = os.path.join(self.exec_dir, "images")
-                    if not os.path.exists(img_dir):
-                        os.makedirs(img_dir)
                     self.tree.draw_tree(
-                        os.path.join(img_dir, "step_%s" % i))
+                        os.path.join(self.exec_dir, "images"))
+
             except Timeout.Timeout:
                 return 0
 
