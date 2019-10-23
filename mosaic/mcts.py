@@ -75,6 +75,7 @@ class MCTS():
 
         if config is None:
             return 0, None
+
         self.logger.info("Begin BACKUP")
         self.BACKUP(front, reward)
         self.logger.info("End BACKUP")
@@ -93,11 +94,10 @@ class MCTS():
         node = 0  # Root of the tree
         while not self.tree.is_terminal(node):
             if len(self.tree.get_children(node)) == 0:
-                self.logger.info("Expand on node {0}".format(node))
                 return self.EXPAND(node)
             else:
                 if not self.tree.fully_expanded(node, self.env):
-                    self.logger.info("Not fully expanded. Expand on node {0}".format(node))
+                    self.logger.info("Not fully expanded.")
                     return self.EXPAND(node)
                 else:
                     current_node = self.tree.get_info_node(node)
@@ -110,7 +110,7 @@ class MCTS():
                                                      [x[1] for x in children],
                                                      [x[2] for x in children],
                                                      state=self.tree.get_path_to_node(node))
-                        self.logger.info("Selection\t node={0}".format(node))
+                        self.logger.infself.n_iter +=o("Selection\t node={0}".format(node))
                     else:
                         self.logger.error("Empty list of valid children\n current node {0}\t List of children {1}".format(current_node,
                                                                                                                               self.tree.get_children(node)))
@@ -120,6 +120,7 @@ class MCTS():
     def EXPAND(self, node):
         """Expand child node."""
         st_time = time.time()
+        self.logger.info("Expand on node {0}\n Current history: {1}".format(node, self.tree.get_path_to_node(node)))
         name, value, terminal = self.policy.expansion(self.env.next_move,
                                                       [self.tree.get_path_to_node(node),
                                                        self.tree.get_children(node, info=["name", "value"])])
