@@ -112,7 +112,7 @@ class MCTS():
                                                      state=self.tree.get_path_to_node(node))
                         self.logger.info("Selection\t node={0}".format(node))
                     else:
-                        self.logger.error("Empty list of valid children\n current node {1}\t List of children {2}".format(current_node,
+                        self.logger.error("Empty list of valid children\n current node {0}\t List of children {1}".format(current_node,
                                                                                                                               self.tree.get_children(node)))
                         return node
         return node
