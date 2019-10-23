@@ -85,7 +85,7 @@ class MCTS():
         """Selection using policy."""
         node = 0  # Root of the tree
         while not self.tree.is_terminal(node):
-            if len(self.tree.get_childs(node)) == 0:
+            if len(self.tree.get_children(node)) == 0:
                 return self.EXPAND(node)
             else:
                 if not self.tree.fully_expanded(node, self.env):
@@ -94,7 +94,7 @@ class MCTS():
                     current_node = self.tree.get_info_node(node)
                     children = [[n,
                                  self.tree.get_attribute(n, "reward"),
-                                 self.tree.get_attribute(n, "visits")] for n in self.tree.get_childs(node) if not self.tree.get_attribute(n, "invalid")]
+                                 self.tree.get_attribute(n, "visits")] for n in self.tree.get_children(node) if not self.tree.get_attribute(n, "invalid")]
                     if len(children) > 0:
                         node = self.policy.selection((current_node["reward"], current_node["visits"]),
                                                      [x[0] for x in children],
@@ -103,16 +103,18 @@ class MCTS():
                                                      state=self.tree.get_path_to_node(node))
                         self.logger.info("Selection\t node={0}".format(node))
                     else:
-                        self.logger.info("Empty list of valid children")
+                        self.logger.error("Empty list of valid children",
+                                            "current node", current_node, "\n",
+                                            "List of children", self.tree.get_children(node))
                         return node
         return node
 
     def EXPAND(self, node):
         """Expand child node."""
         st_time = time.time()
-        name, value, terminal = self.policy.expansion(self.env.next_moves,
+        name, value, terminal = self.policy.expansion(self.env.next_move,
                                                       [self.tree.get_path_to_node(node),
-                                                       self.tree.get_childs(node, info=["name", "value"])])
+                                                       self.tree.get_children(node, info=["name", "value"])])
         id = self.tree.add_node(name=name, value=value,
                                 terminal=terminal, parent_node=node)
         #print("Expand: ", time.time() - st_time, " sec")
@@ -127,7 +129,7 @@ class MCTS():
         try:
             playout_node = self.env.rollout(self.tree.get_path_to_node(node_id))
         except Exception as e:
-            self.logger.info("Add node %s to not possible state: %s" % (node_id, e))
+            self.logger.error("Add node %s to not possible state: %s" % (node_id, e))
             self.tree.set_attribute(node_id, "invalid", True)
             return 0, None
 

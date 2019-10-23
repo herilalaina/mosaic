@@ -34,7 +34,7 @@ class Environment(AbstractEnvironment):
             except Exception:
                 pass
 
-    def next_moves(self, history=[], info_childs=[]):
+    def next_move(self, history=[], info_childs=[]):
         """Method to generate the next parameter to tune
 
         :param history: current incomplete configuration

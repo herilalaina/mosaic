@@ -56,7 +56,7 @@ class Node():
 
         return False
 
-    def get_label(self, node_id):
+    def get_node_label_by_id(self, node_id):
         node = self.tree.nodes[node_id]
         node_val = node["value"] if not callable(node["value"]) else node["value"].__name__
         if node["value"] is not None:
@@ -69,18 +69,18 @@ class Node():
                                                   str(node["visits"]),
                                                   str(node["reward"])[:4])
 
-    def update_labels(self):
+    def update_label(self):
         for i in range(len(self.tree)):
-            self.tree.node[i]["label"] = self.get_label(i)
+            self.tree.node[i]["label"] = self.get_node_label_by_id(i)
 
     def draw_tree(self, file_name = ""):
-        self.update_labels()
+        self.update_label()
         try:
             write_dot(self.tree, file_name + '.dot')
         except Exception as e:
             print(e)
 
-    def get_childs(self, node_id, info = []):
+    def get_children(self, node_id, info = []):
         if len(info) == 0:
             return list(self.tree.successors(node_id))
         else:
