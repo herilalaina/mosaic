@@ -65,12 +65,19 @@ class MCTS():
         """Monte carlo tree search iteration."""
         self.logger.info(
             "#########################Iteration={0}##################################".format(self.n_iter))
+        self.logger.info("Begin SELECTION")
         front = self.TREEPOLICY()
+        self.logger.info("End SELECTION")
+
+        self.logger.info("Begin PLAYOUT")
         reward, config = self.PLAYOUT(front)
+        self.logger.info("End PLAYOUT")
 
         if config is None:
             return 0, None
+        self.logger.info("Begin BACKUP")
         self.BACKUP(front, reward)
+        self.logger.info("End BACKUP")
         self.n_iter += 1
 
         # if self.exec_dir != "":
@@ -86,9 +93,11 @@ class MCTS():
         node = 0  # Root of the tree
         while not self.tree.is_terminal(node):
             if len(self.tree.get_children(node)) == 0:
+                self.logger.info("Expand on node {0}".format(node))
                 return self.EXPAND(node)
             else:
                 if not self.tree.fully_expanded(node, self.env):
+                    self.logger.info("Not fully expanded. Expand on node {0}".format(node))
                     return self.EXPAND(node)
                 else:
                     current_node = self.tree.get_info_node(node)
@@ -117,13 +126,14 @@ class MCTS():
                                                        self.tree.get_children(node, info=["name", "value"])])
         id = self.tree.add_node(name=name, value=value,
                                 terminal=terminal, parent_node=node)
-        #print("Expand: ", time.time() - st_time, " sec")
         self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(
             id, name, value, terminal))
         return id
 
     def PLAYOUT(self, node_id):
         """Playout policy."""
+
+        self.logger.info("Playout on : {0}".format(self.tree.get_path_to_node(node_id)))
 
         st_time = time.time()
         try:
