@@ -112,9 +112,8 @@ class MCTS():
                                                      state=self.tree.get_path_to_node(node))
                         self.logger.info("Selection\t node={0}".format(node))
                     else:
-                        self.logger.error("Empty list of valid children",
-                                            "current node", current_node, "\n",
-                                            "List of children", self.tree.get_children(node))
+                        self.logger.error("Empty list of valid children\n current node {1}\t List of children {2}".format(current_node,
+                                                                                                                              self.tree.get_children(node)
                         return node
         return node
 
@@ -153,7 +152,6 @@ class MCTS():
 
     def BACKUP(self, node, reward):
         """Back propagate reward."""
-        self.logger.info("Begin BACKUP ...")
         for parent in self.tree.get_path_to_node(node_id=node, name=False):
             vl, vs = self.tree.get_attribute(
                 parent, "reward"), self.tree.get_attribute(parent, "visits")
@@ -161,7 +159,6 @@ class MCTS():
                 parent, vl, vs, reward)
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
-        self.logger.info("End BACKUP ...")
 
     def create_node_for_algorithm(self):
         id_class = {}

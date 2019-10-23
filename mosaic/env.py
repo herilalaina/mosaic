@@ -59,7 +59,7 @@ class AbstractEnvironment:
     def _check_if_same_pipeline(self, pip1, pip2):
         return set(pip1) != set(pip2)
 
-    def _has_finite_child(self, history=[]):
+    def _has_finite_nb_children(self, history=[]):
         try:
             rollout = self.rollout(history)
         except Exception as e:

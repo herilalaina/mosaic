@@ -41,7 +41,7 @@ class Node():
 
     def fully_expanded(self, node_id, env):
         # Check if node is fully expanded.
-        has_next_parameter = env._has_finite_child(self.get_path_to_node(node_id))
+        has_next_parameter = env._has_finite_nb_children(self.get_path_to_node(node_id))
         if not has_next_parameter:
             return True
 
