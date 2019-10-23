@@ -3,8 +3,6 @@ import networkx as nx
 
 try:
     from networkx.drawing.nx_agraph import write_dot
-    from networkx.drawing.nx_agraph import graphviz_layout
-    import matplotlib.pyplot as plt
 except:
     print("Can not import graphviz_layout and matplotlib")
 
