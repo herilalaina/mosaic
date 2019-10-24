@@ -81,12 +81,6 @@ class MCTS():
         self.logger.info("End BACKUP")
         self.n_iter += 1
 
-        # if self.exec_dir != "":
-        #     # self.env.score_model.save_data(self.exec_dir)
-        #     #write_gpickle(self.tree, os.path.join(self.exec_dir, "tree.json"))
-        #     with open(os.path.join(self.exec_dir, "full_log.json"), 'w') as outfile:
-        #         json.dump(self.env.history_score, outfile)
-
         return reward, config
 
     def TREEPOLICY(self):
@@ -103,7 +97,8 @@ class MCTS():
                     current_node = self.tree.get_info_node(node)
                     children = [[n,
                                  self.tree.get_attribute(n, "reward"),
-                                 self.tree.get_attribute(n, "visits")] for n in self.tree.get_children(node) if not self.tree.get_attribute(n, "invalid")]
+                                 self.tree.get_attribute(n, "visits")] for n in self.tree.get_children(node) if
+                                not self.tree.get_attribute(n, "invalid")]
                     if len(children) > 0:
                         node = self.policy.selection((current_node["reward"], current_node["visits"]),
                                                      [x[0] for x in children],
@@ -112,8 +107,10 @@ class MCTS():
                                                      state=self.tree.get_path_to_node(node))
                         self.logger.info("Selection\t node={0}".format(node))
                     else:
-                        self.logger.error("Empty list of valid children\n current node {0}\t List of children {1}".format(current_node,
-                                                                                                                              self.tree.get_children(node)))
+                        self.logger.error(
+                            "Empty list of valid children\n current node {0}\t List of children {1}".format(
+                                current_node,
+                                self.tree.get_children(node)))
                         return node
         return node
 
@@ -159,18 +156,7 @@ class MCTS():
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
 
-    def create_node_for_algorithm(self):
-        id_class = {}
-        for cl in ["bernoulli_nb", "multinomial_nb",
-                   "decision_tree", "gaussian_nb", "sgd",
-                   "passive_aggressive", "xgradient_boosting",
-                   "adaboost", "extra_trees", "gradient_boosting",
-                   "lda", "liblinear_svc", "libsvm_svc", "qda", "k_nearest_neighbors", "random_forest"]:
-            id_class[cl] = self.tree.add_node(
-                name="classifier:__choice__", value=cl, terminal=False, parent_node=0)
-        return id_class
-
-    def run(self, n = 1, initial_configurations = [], nb_iter_to_generate_img=-1):
+    def run(self, n=1, initial_configurations=[], nb_iter_to_generate_img=-1):
         start_run = time.time()
 
         self.bestconfig = None
@@ -196,11 +182,12 @@ class MCTS():
                     else:
                         return 0
 
-                if self.exec_dir != "":
-                    self.tree.draw_tree(
-                        os.path.join(self.exec_dir, "images"))
+                    if nb_iter_to_generate_img == -1 or i % nb_iter_to_generate_img == 0:
+                        self.tree.draw_tree(
+                            os.path.join(self.exec_dir, "images"))
 
             except Timeout.Timeout:
+                self.logger.info("Budget exhausted.")
                 return 0
 
     def print_tree(self, images):

@@ -23,12 +23,6 @@ class Search:
         :param policy_arg: specific option for MCTS policy
         :param exec_dir: directory to store tmp files
         """
-        env = environment
-        # env.score_model.dataset_features = problem_features
-        self.mcts = MCTS(env=env,
-                         time_budget=time_budget,
-                         policy_arg=policy_arg,
-                         exec_dir=exec_dir)
         # config logger
         self.logger = logging.getLogger('mcts')
 
@@ -45,6 +39,13 @@ class Search:
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
 
+        env = environment
+        # env.score_model.dataset_features = problem_features
+        self.mcts = MCTS(env=env,
+                         time_budget=time_budget,
+                         policy_arg=policy_arg,
+                         exec_dir=exec_dir)
+
     def run(self, nb_simulation = 1, initial_configurations=[], nb_iter_to_generate_img=-1):
         """Run MCTS algortihm
 
@@ -56,17 +57,3 @@ class Search:
         self.logger.info("# Run {0} iterations of MCTS".format(nb_simulation))
         self.mcts.run(nb_simulation, initial_configurations, nb_iter_to_generate_img)
         return self.mcts.bestconfig, self.mcts.bestscore
-
-    def test_performance(self, X_train, y_train, X_test, y_test, func_test, categorical_features):
-        scores = []
-        for r in self.mcts.env.final_model:
-            time = r["running_time"]
-            model = r["model"]
-            try:
-                score = func_test(model, X_train, y_train,
-                                  X_test, y_test, categorical_features)
-                if score is not None:
-                    scores.append((time, score, r["cv_score"]))
-            except Exception as e:
-                self.logger.error(e)
-        return scores
