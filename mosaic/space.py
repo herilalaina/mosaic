@@ -28,7 +28,6 @@ class Space():
             scenario = self.generate_playout_scenario(history = history)
             param = scenario.call()
             val = self.sample(param)
-            # print(history, param, val, self.test_rules(history + [(param, val)]), info_childs)
             if (len(info_childs) == 0 or (param, val) not in info_childs) and self.test_rules(history + [(param, val)]):
                 ok = True
         return param, val, self.get_nb_possible_child(history + [(param, val)]) == 0

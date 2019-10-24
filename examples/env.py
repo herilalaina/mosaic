@@ -6,10 +6,10 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatH
 from mosaic.external.ConfigSpace.util import get_one_exchange_neighbourhood_with_history
 from ConfigSpace import Configuration
 
-from mosaic.env import AbstractEnvironment
+from mosaic.env import MosaicEnvironment
 
 
-class Environment(AbstractEnvironment):
+class Environment(MosaicEnvironment):
 
     def __init__(self, eval_func,
                  config_space,

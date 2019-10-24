@@ -3,6 +3,7 @@
 import time
 import datetime
 import numpy as np
+import logging
 
 
 class AbstractEnvironment:
@@ -12,8 +13,44 @@ class AbstractEnvironment:
         :param seed: random seed
         """
         self.seed = seed
+        self.logger = logging.getLogger("mcts")
         self.start_time = time.time()
         self.rng = np.random.RandomState(seed)
+
+    def init_configurations(self, intial_configurations):
+        for config in intial_configurations:
+            self.evaluate(config)
+
+    def _evaluate(self, config):
+        self.logger.info("Evaluation configuration: {0}".format(config))
+        score = self.evaluate(config)
+        self.logger.info("Score: {0}".format(score))
+        return score
+
+    def _check_if_same_pipeline(self, pip1, pip2):
+        return set(pip1) != set(pip2)
+
+    def _has_finite_nb_children(self, history=[]):
+        try:
+            rollout = self.rollout(history)
+        except Exception as e:
+            return False
+        return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
+
+    def run_default_configuration(self):
+        raise NotImplementedError
+
+    def serialize_configuration(self, config):
+        return config
+
+    def __str__(self):
+        return "Environment: %s\n\t" \
+               "-> start time: %s (UTC)" % (self.__class__.__name__,
+                                            datetime.datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))
+
+class MosaicEnvironment(AbstractEnvironment):
+    def __init__(self, seed=42):
+        super().__init__(seed)
 
     def rollout(self, history=[]):
         """Rollout method to generate complete configuration starting with `history`
@@ -39,7 +76,7 @@ class AbstractEnvironment:
         """
         pass
 
-    def _evaluate(self, config):
+    def evaluate(self, config):
         """Method to evaluate one configuration
 
         :param config: configuration to evaluate
@@ -55,21 +92,3 @@ class AbstractEnvironment:
         :return: maximum number of children
         """
         raise NotImplementedError
-
-    def _check_if_same_pipeline(self, pip1, pip2):
-        return set(pip1) != set(pip2)
-
-    def _has_finite_nb_children(self, history=[]):
-        try:
-            rollout = self.rollout(history)
-        except Exception as e:
-            return False
-        return self._check_if_same_pipeline([el for el in rollout], [el[0] for el in history])
-
-    def run_default_configuration(self):
-        raise NotImplementedError
-
-    def __str__(self):
-        return "Environment: %s\n\t" \
-               "-> start time: %s (UTC)" % (self.__class__.__name__,
-                                            datetime.datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))

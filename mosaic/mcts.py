@@ -110,7 +110,7 @@ class MCTS():
                                                      [x[1] for x in children],
                                                      [x[2] for x in children],
                                                      state=self.tree.get_path_to_node(node))
-                        self.logger.infself.n_iter +=o("Selection\t node={0}".format(node))
+                        self.logger.info("Selection\t node={0}".format(node))
                     else:
                         self.logger.error("Empty list of valid children\n current node {0}\t List of children {1}".format(current_node,
                                                                                                                               self.tree.get_children(node)))
@@ -149,8 +149,6 @@ class MCTS():
             "Playout\t param={0}\t score={1}\t exec time={2}".format(playout_node, score, time.time() - st_time))
         return score, playout_node
 
-        print("Evaluate: ", time.time() - st_time, " sec")
-
     def BACKUP(self, node, reward):
         """Back propagate reward."""
         for parent in self.tree.get_path_to_node(node_id=node, name=False):
@@ -172,7 +170,7 @@ class MCTS():
                 name="classifier:__choice__", value=cl, terminal=False, parent_node=0)
         return id_class
 
-    def run(self, n=1, intial_configuration=[], generate_image_path=""):
+    def run(self, n = 1, initial_configurations = [], nb_iter_to_generate_img=-1):
         start_run = time.time()
 
         self.bestconfig = None
@@ -180,7 +178,13 @@ class MCTS():
 
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
+                self.logger.info("Run default configuration")
                 self.env.run_default_configuration()
+
+                if len(initial_configurations) > 0:
+                    self.logger.info("Run intial configurations")
+                else:
+                    self.logger.info("No intial configuration to run.")
 
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
