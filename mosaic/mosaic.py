@@ -1,8 +1,10 @@
 
 import os
 import logging
+import tempfile
 from logging.handlers import RotatingFileHandler
 from mosaic.mcts import MCTS
+
 
 
 class Search:
@@ -13,7 +15,7 @@ class Search:
                  time_budget=3600,
                  seed=1,
                  policy_arg={},
-                 exec_dir=""):
+                 exec_dir = None):
         """Initialization algorithm.
 
         :param environment: environment class extending AbstractEnvironment
@@ -34,14 +36,13 @@ class Search:
         # execution directory
         if exec_dir:
             os.makedirs(exec_dir)
-            log_dir = os.path.join(exec_dir, "mcts.log")
         else:
-            log_dir = "mcts.log"
+            exec_dir = tempfile.mkdtemp()
 
-        hdlr = RotatingFileHandler(log_dir, maxBytes=1024 * 100, backupCount=1)
-        #logging.FileHandler(log_dir, mode='w')
+        log_dir = os.path.join(exec_dir, "mcts.log")
+        hdlr = logging.FileHandler(log_dir, mode='w')
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            '%(asctime)s - %(name)s - %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
 
