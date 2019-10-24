@@ -34,7 +34,7 @@ class Search:
         self.logger = logging.getLogger('mcts')
 
         # execution directory
-        if exec_dir:
+        if exec_dir is not None:
             os.makedirs(exec_dir)
         else:
             exec_dir = tempfile.mkdtemp()
