@@ -2,16 +2,13 @@
 
 import logging
 import os
-import gc
-import time
-import numpy as np
-import json
 
-from mosaic.strategy.policy import UCT, Besa, PUCT
+import numpy as np
+import time
+
 from mosaic.node import Node
+from mosaic.strategy.policy import UCT, Besa, PUCT
 from mosaic.utils import Timeout
-from mosaic.utils import get_index_percentile
-from networkx.readwrite.gpickle import write_gpickle
 
 
 class MCTS():
@@ -25,6 +22,8 @@ class MCTS():
         self.env = env
         self.time_budget = time_budget
         self.exec_dir = exec_dir
+        self.bestconfig = None
+        self.bestscore = - np.inf
 
         # Init tree
         self.tree = Node()
@@ -158,19 +157,15 @@ class MCTS():
 
     def run(self, n=1, initial_configurations=[], nb_iter_to_generate_img=-1):
         start_run = time.time()
-
-        self.bestconfig = None
-        self.bestscore = - np.inf
-
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
                 self.logger.info("Run default configuration")
                 self.env.run_default_configuration()
 
                 if len(initial_configurations) > 0:
-                    self.logger.info("Run intial configurations")
+                    self.logger.info("Run initial configurations")
                 else:
-                    self.logger.info("No intial configuration to run.")
+                    self.logger.info("No initial configuration to run.")
 
                 for i in range(n):
                     if time.time() - self.env.start_time < self.time_budget:
@@ -185,10 +180,15 @@ class MCTS():
                     if nb_iter_to_generate_img == -1 or i % nb_iter_to_generate_img == 0:
                         self.tree.draw_tree(
                             os.path.join(self.exec_dir, "images"))
+                        self.print_tree("tree_{0}".format(i))
 
             except Timeout.Timeout:
                 self.logger.info("Budget exhausted.")
                 return 0
 
-    def print_tree(self, images):
-        self.tree.draw_tree(images)
+    def print_tree(self, name_img):
+        img_dir = os.path.join(self.exec_dir, "images")
+        if not os.path.isdir(img_dir):
+            os.mkdir(img_dir)
+
+        self.tree.draw_tree(os.path.join(img_dir, name_img))

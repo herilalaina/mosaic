@@ -1,9 +1,10 @@
 """Base environement class."""
 
-import time
 import datetime
-import numpy as np
 import logging
+
+import numpy as np
+import time
 
 
 class AbstractEnvironment:
@@ -46,7 +47,9 @@ class AbstractEnvironment:
     def __str__(self):
         return "Environment: %s\n\t" \
                "-> start time: %s (UTC)" % (self.__class__.__name__,
-                                            datetime.datetime.utcfromtimestamp(int(self.start_time)).strftime('%Y-%m-%d %H:%M:%S'))
+                                            datetime.datetime.utcfromtimestamp(int(self.start_time)).strftime(
+                                                '%Y-%m-%d %H:%M:%S'))
+
 
 class MosaicEnvironment(AbstractEnvironment):
     def __init__(self, seed=42):
@@ -55,8 +58,8 @@ class MosaicEnvironment(AbstractEnvironment):
     def rollout(self, history=[]):
         """Rollout method to generate complete configuration starting with `history`
 
-        :param history: current incomplete configuration
-        :return: sampled configuration
+        :param history: current incomplete configuration: list of tuple (name_param:str, value_param:object)
+        :return: sampled configuration: list of tuple (name_param:str, value_param:object)
         """
         raise NotImplementedError
 
@@ -65,30 +68,30 @@ class MosaicEnvironment(AbstractEnvironment):
 
         :param history: current incomplete configuration
         :param info_childs: information about children
-        :return: tuple (next_param, value_param, is_terminal)
+        :return: tuple (next_param:str, value_param:obbejct, is_terminal:bool)
         """
         raise NotImplementedError
 
     def reset(self, **kwargs):
-        """Reset environment
+        """Reset environment.
 
-        :param kwargs: parameter to reset environment, optional
+        :param kwargs: method to reset environment, optional
         """
         pass
 
     def evaluate(self, config):
         """Method to evaluate one configuration
 
-        :param config: configuration to evaluate
-        :return: performance of the configuration
+        :param config: configuration to evaluate. List of tuple (name_param:str, value_param:object)
+        :return: performance of the configuration: Float
         """
         raise NotImplementedError
 
     def get_nb_children(self, parameter, value, current_pipeline):
         """Get the number of
 
-        :param parameter:
-        :param value:
-        :return: maximum number of children
+        :param parameter:name
+        :param value:value
+        :return: maximum number of children:int
         """
         raise NotImplementedError

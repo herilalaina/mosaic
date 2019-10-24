@@ -1,9 +1,8 @@
-
 import os
+import numpy as np
 import logging
 import tempfile
 from mosaic.mcts import MCTS
-
 
 
 class Search:
@@ -14,7 +13,7 @@ class Search:
                  time_budget=3600,
                  seed=1,
                  policy_arg={},
-                 exec_dir = None):
+                 exec_dir=None):
         """Initialization algorithm.
 
         :param environment: environment class extending AbstractEnvironment
@@ -27,27 +26,26 @@ class Search:
         self.logger = logging.getLogger('mcts')
 
         # execution directory
-        if exec_dir is not None:
-            os.makedirs(exec_dir)
-        else:
+        if exec_dir is None:
             exec_dir = tempfile.mkdtemp()
+        os.makedirs(exec_dir)
 
-        log_dir = os.path.join(exec_dir, "mcts.log")
-        hdlr = logging.FileHandler(log_dir, mode='w')
+        hdlr = logging.FileHandler(os.path.join(exec_dir, "mcts.log"), mode='w')
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
 
         env = environment
-        # env.score_model.dataset_features = problem_features
         self.mcts = MCTS(env=env,
                          time_budget=time_budget,
                          policy_arg=policy_arg,
                          exec_dir=exec_dir)
 
-    def run(self, nb_simulation = 1, initial_configurations=[], nb_iter_to_generate_img=-1):
-        """Run MCTS algortihm
+        np.seed(seed)
+
+    def run(self, nb_simulation=1, initial_configurations=[], nb_iter_to_generate_img=-1):
+        """Run MCTS algorithm
 
         :param nb_simulation: number of MCTS simulation to run
         :param initial_configurations: path for generated image , optional
