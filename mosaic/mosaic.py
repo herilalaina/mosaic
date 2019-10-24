@@ -28,7 +28,8 @@ class Search:
         # execution directory
         if exec_dir is None:
             exec_dir = tempfile.mkdtemp()
-        os.makedirs(exec_dir)
+        else:
+            os.makedirs(exec_dir)
 
         hdlr = logging.FileHandler(os.path.join(exec_dir, "mcts.log"), mode='w')
         formatter = logging.Formatter(
@@ -42,7 +43,7 @@ class Search:
                          policy_arg=policy_arg,
                          exec_dir=exec_dir)
 
-        np.seed(seed)
+        np.random.seed(seed)
 
     def run(self, nb_simulation=1, initial_configurations=[], nb_iter_to_generate_img=-1):
         """Run MCTS algorithm
