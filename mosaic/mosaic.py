@@ -24,6 +24,7 @@ class Search:
         """
         # config logger
         self.logger = logging.getLogger('mcts')
+        self.logger.setLevel(logging.DEBUG)
 
         # execution directory
         if exec_dir is None:
