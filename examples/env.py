@@ -1,10 +1,6 @@
-import pynisher
 import numpy as np
-from datetime import datetime
-
-from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, IntegerHyperparameter
-from mosaic.external.ConfigSpace.util import get_one_exchange_neighbourhood_with_history
-from ConfigSpace import Configuration
+import pynisher
+from ConfigSpace.hyperparameters import CategoricalHyperparameter
 
 from mosaic.env import MosaicEnvironment
 
@@ -23,30 +19,19 @@ class Environment(MosaicEnvironment):
         self.cpu_time_in_s = cpu_time_in_s
 
     def rollout(self, history=[]):
-        """Rollout method to generate complete configuration starting with `history`
-
-        :param history: current incomplete configuration
-        :return: sampled configuration
-        """
         while True:
             try:
                 return self.config_space.sample_partial_configuration_with_default(history)
             except Exception:
                 pass
 
-    def next_move(self, history=[], info_childs=[]):
-        """Method to generate the next parameter to tune
-
-        :param history: current incomplete configuration
-        :param info_childs: information about children
-        :return: tuple (next_param, value_param, is_terminal)
-        """
+    def next_move(self, history=[], info_children=[]):
         try:
 
             possible_params_ = list(
                 self.config_space.get_possible_next_params(history))
             possible_params = self._can_be_selectioned(
-                possible_params_, [v[0] for v in info_childs], history)
+                possible_params_, [v[0] for v in info_children], history)
 
             id_param = np.random.randint(0, len(possible_params))
             next_param = possible_params[id_param]
@@ -63,7 +48,7 @@ class Environment(MosaicEnvironment):
 
             history.append((next_param, value_param))
         except Exception as e:
-            raise(e)
+            raise (e)
 
         possible_params.remove(next_param)
         is_terminal = len(possible_params) == 0
@@ -96,7 +81,7 @@ class Environment(MosaicEnvironment):
     def get_nb_children(self, parameter, value, path):
         return 20
 
-    def _evaluate(self, config):
+    def evaluate(self, config):
 
         eval_func = pynisher.enforce_limits(
             mem_in_mb=self.mem_in_mb, cpu_time_in_s=self.cpu_time_in_s)(self.eval_func)

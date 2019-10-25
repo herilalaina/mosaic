@@ -18,7 +18,7 @@ class Space():
         self.sampler = sampler
         self.rules = rules
 
-    def next_params(self, history=[], info_childs = []):
+    def next_params(self, history=[], info_children = []):
         """Return next hyperparameter
             node_name: current node (string)
             history: (node_name, value)
@@ -28,7 +28,7 @@ class Space():
             scenario = self.generate_playout_scenario(history = history)
             param = scenario.call()
             val = self.sample(param)
-            if (len(info_childs) == 0 or (param, val) not in info_childs) and self.test_rules(history + [(param, val)]):
+            if (len(info_children) == 0 or (param, val) not in info_children) and self.test_rules(history + [(param, val)]):
                 ok = True
         return param, val, self.get_nb_possible_child(history + [(param, val)]) == 0
 

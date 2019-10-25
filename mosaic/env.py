@@ -53,21 +53,27 @@ class AbstractEnvironment:
 
 class MosaicEnvironment(AbstractEnvironment):
     def __init__(self, seed=42):
+        """Init method for environment
+
+        :param seed: environment seed
+        :type seed: int
+        """
         super().__init__(seed)
 
     def rollout(self, history=[]):
         """Rollout method to generate complete configuration starting with `history`
 
-        :param history: current incomplete configuration: list of tuple (name_param:str, value_param:object)
+        :param history: current incomplete configuration
+        :type history: List of (name_param:str, value_param:object)
         :return: sampled configuration: list of tuple (name_param:str, value_param:object)
         """
         raise NotImplementedError
 
-    def next_move(self, history=[], info_childs=[]):
+    def next_move(self, history=[], info_children=[]):
         """Method to generate the next parameter to tune
 
         :param history: current incomplete configuration
-        :param info_childs: information about children
+        :param info_children: information about children
         :return: tuple (next_param:str, value_param:obbejct, is_terminal:bool)
         """
         raise NotImplementedError

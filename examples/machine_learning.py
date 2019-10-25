@@ -57,6 +57,6 @@ environment = Environment(svm_from_cfg,
 
 mosaic = Search(environment=environment,
                 policy_arg = {"c_ucb": 1.1, "coef_progressive_widening": 0.6},
-                exec_dir="execution")
+                verbose=True)
 best_config, best_score = mosaic.run(nb_simulation=100)
 print("Best config: ", best_config, "best score", best_score)
