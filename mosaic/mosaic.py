@@ -32,8 +32,7 @@ class Search:
             os.makedirs(exec_dir)
 
         hdlr = logging.FileHandler(os.path.join(exec_dir, "mcts.log"), mode='w')
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s')
+        formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(funcName)s :: %(message)s')
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr)
 

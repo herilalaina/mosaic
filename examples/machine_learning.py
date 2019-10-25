@@ -55,6 +55,8 @@ environment = Environment(svm_from_cfg,
                           cpu_time_in_s=30,
                           seed=42)
 
-mosaic = Search(environment=environment, policy_arg = {"c_ucb": 1.1, "coef_progressive_widening": 0.6})
+mosaic = Search(environment=environment,
+                policy_arg = {"c_ucb": 1.1, "coef_progressive_widening": 0.6},
+                exec_dir="execution")
 best_config, best_score = mosaic.run(nb_simulation=100)
 print("Best config: ", best_config, "best score", best_score)
