@@ -2,10 +2,10 @@ import logging
 
 class BaseStrategy():
     def __init__(self):
-        pass
+        self.logger = logging.getLogger("mcts")
 
     def selection(self, parent, ids, vals, visits, state=None):
-        self.logger = logging.getLogger("mcts")
+        pass
 
     def expansion(self, sampler, arg):
         return sampler(*arg)
