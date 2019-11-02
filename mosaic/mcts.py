@@ -32,7 +32,7 @@ class MCTS():
         self.logger = logging.getLogger('mcts')
 
         # Policy
-        if policy == "uct":
+        if policy == "uct" or policy == "puct":
             if "c_ucb" in policy_arg:
                 c_ucb = policy_arg["c_ucb"]
             else:
