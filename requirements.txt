@@ -1,3 +1,4 @@
+## For autosklearn
 setuptools
 nose
 Cython
@@ -5,9 +6,18 @@ Cython
 numpy>=1.9.0
 scipy>=0.14.1
 
-scikit-learn
+scikit-learn>=0.21.0,<0.22
+
+lockfile
+joblib
+psutil
+pyyaml
+liac-arff
+pandas
 
 ConfigSpace>=0.4.0,<0.5
 pynisher>=0.4.2
+pyrfr>=0.7,<0.9
+smac==0.8
 
 networkx==2.2
