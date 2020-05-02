@@ -6,9 +6,12 @@ Mosaic is a Python library for pipeline optimization. This library implements Mo
 ### Installation
 
 Requirements
-* scipy
-* numpy
+* Python >= 3.5.6
 * pygraphviz: necessary to generate dot image files (optional)
+```commandline
+conda install graphviz
+pip install pygraphviz
+```
 
 Install via Github:
 ```bash

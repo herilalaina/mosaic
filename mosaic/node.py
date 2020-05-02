@@ -7,7 +7,7 @@ except:
     print("Can not import graphviz_layout and matplotlib")
 
 
-class Node():
+class Node:
 
     def __init__(self):
         self.tree = nx.DiGraph()
