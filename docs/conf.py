@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Mosaic'
-copyright = '2020, Herilalaina Rakotoarison'
+copyright = '2020, H. Rakotoarison, M. Schoenauer and M. Sebag'
 author = 'Herilalaina Rakotoarison'
 
 # The full version, including alpha/beta/rc tags
@@ -54,6 +54,7 @@ html_theme_options = {
     'github_button': False,
     'github_banner': True,
     'nosidebar': True,
+    'page_width': '1000px'
 }
 
 
