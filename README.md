@@ -1,7 +1,7 @@
 # Mosaic
 Mosaic is a Python library for pipeline optimization. This library implements Monte-Carlo Tree Search algorithm in order to find optimal pipeline.
 
-<span style="color:red">This project is under heavy development</span>.
+[Documentation](https://herilalaina.github.io/mosaic/)
 
 ### Installation
 
