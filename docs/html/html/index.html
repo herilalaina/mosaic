@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MOSAIC &#8212; Monte Carlo Tree Search for Algorithm Configuration</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="mosaic">
+<h1>MOSAIC<a class="headerlink" href="#mosaic" title="Permalink to this headline">¶</a></h1>
+<p><em>Monte-Carlo Tree Search for Algorithm Configuration</em> (Mosaic) is a python
+library for pipeline optimization using MCTS algorithm.</p>
+<div class="toctree-wrapper compound">
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MOSAIC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-of-usage">Example of usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api">API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#citing-mosaic">Citing Mosaic</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Requirements:</p>
+<ul class="simple">
+<li><p>Python &gt;= 3.5.6</p></li>
+<li><p>pygraphviz: necessary to generate dot image files (optional)</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install graphviz
+pip install pygraphviz
+</pre></div>
+</div>
+<p>Install via Github:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install git+https://github.com/herilalaina/mosaic
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-of-usage">
+<h2>Example of usage<a class="headerlink" href="#example-of-usage" title="Permalink to this headline">¶</a></h2>
+<p>A simple example of using <strong>mosaic</strong> to configure machine
+learning pipeline made with PCA and SVM classifier.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python examples/machine_learning.py
+</pre></div>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="search-module">
+<h3>Search module<a class="headerlink" href="#search-module" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="mosaic.mosaic.Search">
+<em class="property">class </em><code class="sig-prename descclassname">mosaic.mosaic.</code><code class="sig-name descname">Search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">environment</span></em>, <em class="sig-param"><span class="n">time_budget</span><span class="o">=</span><span class="default_value">3600</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">exec_dir</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bandit_policy</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">coef_progressive_widening</span><span class="o">=</span><span class="default_value">0.6</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.Search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search optimal pipeline using Monte-Carlo Tree Search</p>
+<blockquote>
+<div><dl class="simple">
+<dt>environment: object</dt><dd><p>environment class extending AbstractEnvironment</p>
+</dd>
+<dt>time_budget: int</dt><dd><p>overall time budget</p>
+</dd>
+<dt>seed: int</dt><dd><p>random seed</p>
+</dd>
+<dt>bandit_policy: dict</dt><dd><p>bandit policy used in MCTS. Available choice are uct, besa, puct.
+Example {“policy_name”: “uct”, “c_ub”: 1.41}, {“policy_name”: “besa”}</p>
+</dd>
+<dt>exec_dir: str</dt><dd><p>directory to store tmp files</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>logger: class &lt;logging&gt;</strong></dt><dd><p>Logger used</p>
+</dd>
+<dt><strong>mcts</strong><span class="classifier">class &lt;mosaic.MCTS&gt;</span></dt><dd><p>object that run MCTS algorithm</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mosaic.mosaic.Search.run" title="mosaic.mosaic.Search.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>(self[, nb_simulation, …])</p></td>
+<td><p>Run MCTS algorithm</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt id="mosaic.mosaic.Search.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">nb_simulation</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">initial_configurations</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">step_to_generate_img</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.Search.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MCTS algorithm</p>
+<dl class="simple">
+<dt>nb_simulation: int</dt><dd><p>number of MCTS simulation to run (default is 10)</p>
+</dd>
+<dt>initial_configurations: list of object</dt><dd><p>set of configuration to start with (default is [])</p>
+</dd>
+<dt>step_to_generate_img: int or None</dt><dd><p>set of initial configuration (default -1, generate image for each MCTS iteration)
+Do not generate images if None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="native-mcts-module">
+<h3>Native MCTS module<a class="headerlink" href="#native-mcts-module" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="mosaic.mosaic.MCTS">
+<em class="property">class </em><code class="sig-prename descclassname">mosaic.mosaic.</code><code class="sig-name descname">MCTS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">env</span></em>, <em class="sig-param"><span class="n">time_budget</span></em>, <em class="sig-param"><span class="n">bandit_policy</span></em>, <em class="sig-param"><span class="n">coef_progressive_widening</span></em>, <em class="sig-param"><span class="n">exec_dir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implementation of Monte Carlo Tree Search algorithm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>env: object</strong></dt><dd><p>Problem environment</p>
+</dd>
+<dt><strong>time_budget</strong><span class="classifier">int</span></dt><dd><p>Time budget</p>
+</dd>
+<dt><strong>coef_progressive_widening: float</strong></dt><dd><p>Coefficient of progressive widening</p>
+</dd>
+<dt><strong>exec_dir: str</strong></dt><dd><p>Path to store results</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>best_config: object</strong></dt><dd><p>Current best configuration</p>
+</dd>
+<dt><strong>best_score: float</strong></dt><dd><p>Current best score</p>
+</dd>
+<dt><strong>tree: object &lt;class mosaic.node.Node&gt;</strong></dt><dd><p>Tree created by the MCTS algorithm</p>
+</dd>
+<dt><strong>logger: object</strong></dt><dd><p>Logger</p>
+</dd>
+<dt><strong>policy: object</strong></dt><dd><p>Bandit algorithm used</p>
+</dd>
+<dt><strong>n_iter: int</strong></dt><dd><p>Number of executed MCTS simulation
+(selection, expansion, playout, back-propagation)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.BACKUP" title="mosaic.mosaic.MCTS.BACKUP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BACKUP</span></code></a>(self, node, reward)</p></td>
+<td><p>Back propagate reward.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.EXPAND" title="mosaic.mosaic.MCTS.EXPAND"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EXPAND</span></code></a>(self, node)</p></td>
+<td><p>Expand child node.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.MCT_SEARCH" title="mosaic.mosaic.MCTS.MCT_SEARCH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MCT_SEARCH</span></code></a>(self)</p></td>
+<td><p>One simulation of MCTS.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.PLAYOUT" title="mosaic.mosaic.MCTS.PLAYOUT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLAYOUT</span></code></a>(self, node_id)</p></td>
+<td><p>Playout policy.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.TREEPOLICY" title="mosaic.mosaic.MCTS.TREEPOLICY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TREEPOLICY</span></code></a>(self)</p></td>
+<td><p>Selection using policy.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.print_tree" title="mosaic.mosaic.MCTS.print_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_tree</span></code></a>(self, name_img)</p></td>
+<td><p>Print snapshot of constructed tree</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mosaic.mosaic.MCTS.run" title="mosaic.mosaic.MCTS.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>(self[, nb_simulation, …])</p></td>
+<td><p>Run MCTS algorithm</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.BACKUP">
+<code class="sig-name descname">BACKUP</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">node</span></em>, <em class="sig-param"><span class="n">reward</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.BACKUP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Back propagate reward.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.EXPAND">
+<code class="sig-name descname">EXPAND</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">node</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.EXPAND" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand child node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.MCT_SEARCH">
+<code class="sig-name descname">MCT_SEARCH</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.MCT_SEARCH" title="Permalink to this definition">¶</a></dt>
+<dd><p>One simulation of MCTS.</p>
+<p>One simulation is composed of selection,
+expansion, playout and back-propagation</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.PLAYOUT">
+<code class="sig-name descname">PLAYOUT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">node_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.PLAYOUT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Playout policy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.TREEPOLICY">
+<code class="sig-name descname">TREEPOLICY</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.TREEPOLICY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selection using policy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.print_tree">
+<code class="sig-name descname">print_tree</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">name_img</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.print_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print snapshot of constructed tree</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name_img: str</strong></dt><dd><p>Path to store generated image</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mosaic.mosaic.MCTS.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">nb_simulation</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">initial_configurations</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">step_to_generate_img</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mosaic.mosaic.MCTS.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MCTS algorithm</p>
+<dl class="simple">
+<dt>nb_simulation: int</dt><dd><p>number of MCTS simulation to run (default is 10)</p>
+</dd>
+<dt>initial_configurations: list of object</dt><dd><p>set of configuration to start with (default is [])</p>
+</dd>
+<dt>step_to_generate_img: int or None</dt><dd><p>set of initial configuration (default -1, generate image for each MCTS iteration)
+Do not generate images if None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="citing-mosaic">
+<h2>Citing Mosaic<a class="headerlink" href="#citing-mosaic" title="Permalink to this headline">¶</a></h2>
+<p>If you are using <strong>mosaic</strong> in a academic presentation, we would appreciate citation</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>@inproceedings<span class="o">{</span>ijcai2019-457,
+  <span class="nv">title</span>     <span class="o">=</span> <span class="o">{</span>Automated Machine Learning with Monte-Carlo Tree Search<span class="o">}</span>,
+  <span class="nv">author</span>    <span class="o">=</span> <span class="o">{</span>Rakotoarison, Herilalaina and Schoenauer, Marc and Sebag, Michèle<span class="o">}</span>,
+  <span class="nv">booktitle</span> <span class="o">=</span> <span class="o">{</span>Proceedings of the Twenty-Eighth International Joint Conference on
+               Artificial Intelligence, <span class="o">{</span>IJCAI-19<span class="o">}}</span>,
+  <span class="nv">publisher</span> <span class="o">=</span> <span class="o">{</span>International Joint Conferences on Artificial Intelligence Organization<span class="o">}</span>,
+  <span class="nv">pages</span>     <span class="o">=</span> <span class="o">{</span><span class="m">3296</span>--3303<span class="o">}</span>,
+  <span class="nv">year</span>      <span class="o">=</span> <span class="o">{</span><span class="m">2019</span><span class="o">}</span>,
+  <span class="nv">month</span>     <span class="o">=</span> <span class="o">{</span><span class="m">7</span><span class="o">}</span>,
+  <span class="nv">doi</span>       <span class="o">=</span> <span class="o">{</span><span class="m">10</span>.24963/ijcai.2019/457<span class="o">}</span>,
+  <span class="nv">url</span>       <span class="o">=</span> <span class="o">{</span>https://doi.org/10.24963/ijcai.2019/457<span class="o">}</span>,
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Herilalaina Rakotoarison.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/herilalaina/mosaic" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

@@ -5,8 +5,8 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = Mosaic
-SOURCEDIR     = .
-BUILDDIR      = docs/build
+SOURCEDIR     = docs
+BUILDDIR      = docs/html
 
 # Put it first so that "make" without argument is like "make help".
 help:
