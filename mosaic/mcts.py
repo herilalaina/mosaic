@@ -1,29 +1,60 @@
-"""Monte carlo tree seach class."""
+"""Monte Carlo-Tree Search Class."""
 
-import logging
 import os
-
-import numpy as np
+import logging
 import time
 
+import numpy as np
+
 from mosaic.node import Node
-from mosaic.strategy.policy import UCT, Besa, PUCT
 from mosaic.utils import Timeout
+from mosaic.strategy.policy import UCT, Besa, PUCT
 
 
-class MCTS():
-    """Monte carlo tree search implementation."""
+class MCTS:
+    """
+    Implementation of Monte Carlo Tree Search algorithm
 
-    def __init__(self, env,
-                 policy="uct",
-                 time_budget=3600,
-                 policy_arg=None,
-                 exec_dir=""):
+    Parameters
+    -----------
+    env: object
+        Problem environment
+    time_budget : int
+        Time budget
+    coef_progressive_widening: float
+        Coefficient of progressive widening
+    exec_dir: str
+        Path to store results
+
+    Attributes
+    ----------
+    best_config: object
+        Current best configuration
+    best_score: float
+        Current best score
+    tree: object <class mosaic.node.Node>
+        Tree created by the MCTS algorithm
+    logger: object
+        Logger
+    policy: object
+        Bandit algorithm used
+    n_iter: int
+        Number of executed MCTS simulation
+        (selection, expansion, playout, back-propagation)
+
+    """
+
+    def __init__(self,
+                 env,
+                 time_budget,
+                 bandit_policy,
+                 coef_progressive_widening,
+                 exec_dir):
         self.env = env
         self.time_budget = time_budget
         self.exec_dir = exec_dir
-        self.bestconfig = None
-        self.bestscore = - np.inf
+        self.best_config = None
+        self.best_score = - np.inf
 
         # Init tree
         self.tree = Node()
@@ -32,36 +63,38 @@ class MCTS():
         self.logger = logging.getLogger('mcts')
 
         # Policy
-        if policy == "uct":
-            if "c_ucb" in policy_arg:
-                c_ucb = policy_arg["c_ucb"]
+        if bandit_policy["policy_name"] == "uct":
+            if "c_ucb" in bandit_policy:
+                c_ucb = bandit_policy["c_ucb"]
             else:
                 c_ucb = np.sqrt(2)
             self.policy = UCT(c_ucb)
-        elif policy == "besa":
+        elif bandit_policy["policy_name"] == "besa":
             self.policy = Besa()
-        elif policy == "puct":
-            policy_arg["start_time"] = self.env.start_time
-            policy_arg["time_budget"] = self.time_budget
-            self.policy = PUCT(self.env, self.tree, policy_arg)
+        elif bandit_policy["policy_name"] == "puct":
+            bandit_policy["start_time"] = self.env.start_time
+            bandit_policy["time_budget"] = self.time_budget
+            self.policy = PUCT(self.env, self.tree, bandit_policy)
         else:
-            raise NotImplemented("Policy {0} not implemented".format(policy))
+            raise NotImplemented("Policy {0} not implemented".format(bandit_policy["policy_name"]))
 
-        # iteration logging
         self.n_iter = 0
-
-        if "proba" in policy_arg:
-            self.env.proba_expert = policy_arg["proba"]
-
-        if "coef_progressive_widening" in policy_arg:
-            self.tree.coef_progressive_widening = policy_arg["coef_progressive_widening"]
-
-    def reset(self, time_budget=3600):
-        self.time_budget = time_budget
-        self.n_iter = 0
+        self.tree.coef_progressive_widening = coef_progressive_widening
 
     def MCT_SEARCH(self):
-        """Monte carlo tree search iteration."""
+        """One simulation of MCTS.
+
+        One simulation is composed of selection,
+        expansion, playout and back-propagation
+
+        Returns:
+        --------
+            reward: float
+                Reward of the simulation
+            config: object
+                Configuration run
+
+        """
         self.logger.info(
             "#########################Iteration={0}##################################".format(self.n_iter))
         self.logger.info("Begin SELECTION")
@@ -155,7 +188,26 @@ class MCTS():
             self.tree.set_attribute(parent, "reward", new_val)
             self.tree.set_attribute(parent, "visits", new_vis)
 
-    def run(self, n=1, initial_configurations=[], nb_iter_to_generate_img=-1):
+    def run(self, nb_simulation=1, initial_configurations=[], step_to_generate_img=-1):
+        """Run MCTS algorithm
+
+        Parameters:
+        ----------
+        nb_simulation: int
+            number of MCTS simulation to run (default is 10)
+        initial_configurations: list of object
+            set of configuration to start with (default is [])
+        step_to_generate_img: int or None
+            set of initial configuration (default -1, generate image for each MCTS iteration)
+            Do not generate images if None.
+
+        Returns:
+        ----------
+            int
+                1 if timeout else 0
+
+        """
+
         start_run = time.time()
         with Timeout(int(self.time_budget - (start_run - time.time()))):
             try:
@@ -167,26 +219,33 @@ class MCTS():
                 else:
                     self.logger.info("No initial configuration to run.")
 
-                for i in range(n):
+                for i in range(nb_simulation):
                     if time.time() - self.env.start_time < self.time_budget:
                         res, config = self.MCT_SEARCH()
 
-                        if res > self.bestscore:
-                            self.bestscore = res
-                            self.bestconfig = config
+                        if res > self.best_score:
+                            self.best_score = res
+                            self.best_config = config
                     else:
                         return 0
 
-                    if nb_iter_to_generate_img == -1 or i % nb_iter_to_generate_img == 0:
+                    if step_to_generate_img == -1 or i % step_to_generate_img == 0:
                         self.tree.draw_tree(
                             os.path.join(self.exec_dir, "images"))
                         self.print_tree("tree_{0}".format(i))
 
             except Timeout.Timeout:
                 self.logger.info("Budget exhausted.")
-                return 0
+                return 1
 
     def print_tree(self, name_img):
+        """Print snapshot of constructed tree
+
+        Parameters
+        ----------
+        name_img: str
+            Path to store generated image
+        """
         img_dir = os.path.join(self.exec_dir, "images")
         if not os.path.isdir(img_dir):
             os.mkdir(img_dir)

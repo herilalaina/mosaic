@@ -1,48 +1,56 @@
-import logging
 import os
+import sys
+import logging
 import tempfile
 
 import numpy as np
-import sys
-
 from mosaic.mcts import MCTS
 
 
 class Search:
     """
-        Main class to tune pipeline using Monte-Carlo Tree Search
+    Search optimal pipeline using Monte-Carlo Tree Search
 
-        ...
+    Parameters:
+    ----------
+        environment: object
+            environment class extending AbstractEnvironment
+        time_budget: int
+            overall time budget
+        seed: int
+            random seed
+        bandit_policy: dict
+            bandit policy used in MCTS. Available choice are uct, besa, puct.
+            Example {"policy_name": "uct", "c_ub": 1.41}, {"policy_name": "besa"}
+        exec_dir: str
+            directory to store tmp files
 
-        Attributes
-        ----------
-        mcts : class <mosaic.MCTS>
-            object that run MCTS algorithm
+    Attributes
+    ----------
+    logger: class <logging>
+        Logger used
+    mcts : class <mosaic.MCTS>
+        object that run MCTS algorithm
 
-        Methods
-        -------
-        run(nb_simulation=10, initial_configurations=[], nb_iter_to_generate_img=-1)
-            Run nb_simulation of MCTS and initialize with initial_configurations
-        """
+    """
 
     def __init__(self,
                  environment,
                  time_budget=3600,
-                 seed=1,
-                 policy_arg={},
+                 verbose=False,
                  exec_dir=None,
-                 verbose=False):
-        """Initialization algorithm.
-
-        :param environment: environment class extending AbstractEnvironment
-        :param time_budget: overall time budget
-        :param seed: random seed
-        :param policy_arg: specific option for MCTS policy
-        :param exec_dir: directory to store tmp files
+                 bandit_policy=None,
+                 seed=1,
+                 coef_progressive_widening = 0.6):
+        """Init method.
         """
         # config logger
         self.logger = logging.getLogger('mcts')
         self.logger.setLevel(logging.DEBUG)
+
+        # Default bandit policy
+        if bandit_policy is None:
+            bandit_policy = {"policy_name": "uct", "c_uct": np.sqrt(2)}
 
         # execution directory
         if exec_dir is None:
@@ -60,24 +68,33 @@ class Search:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-        env = environment
-        self.mcts = MCTS(env=env,
+        self.mcts = MCTS(env=environment,
                          time_budget=time_budget,
-                         policy_arg=policy_arg,
-                         exec_dir=exec_dir)
+                         exec_dir=exec_dir,
+                         bandit_policy=bandit_policy,
+                         coef_progressive_widening=coef_progressive_widening)
 
         np.random.seed(seed)
 
-    def run(self, nb_simulation=10, initial_configurations=[], nb_iter_to_generate_img=-1):
+    def run(self, nb_simulation=10, initial_configurations=[], step_to_generate_img=-1):
         """Run MCTS algorithm
 
-        :param nb_simulation: number of MCTS simulation to run
-        :param initial_configurations: path for generated image , optional
-        :param nb_iter_to_generate_img: set of initial configuration, optional
-        :return:
-            configuration: best configuration found
+        Parameters:
+        ----------
+        nb_simulation: int
+            number of MCTS simulation to run (default is 10)
+        initial_configurations: list of object
+            set of configuration to start with (default is [])
+        step_to_generate_img: int or None
+            set of initial configuration (default -1, generate image for each MCTS iteration)
+            Do not generate images if None.
+
+        Returns:
+        ----------
+            configuration: object
+                best configuration
 
         """
         self.logger.info("# Run {0} iterations of MCTS".format(nb_simulation))
-        self.mcts.run(nb_simulation, initial_configurations, nb_iter_to_generate_img)
-        return self.mcts.bestconfig, self.mcts.bestscore
+        self.mcts.run(nb_simulation, initial_configurations, step_to_generate_img)
+        return self.mcts.best_config, self.mcts.best_score
