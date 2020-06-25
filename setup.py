@@ -2,8 +2,22 @@
 import os
 import sys
 from setuptools import setup, find_packages
-from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext
+import codecs
+import os.path
+
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
+        return fp.read()
+
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
 
 
 if sys.version_info < (3, 5):
@@ -38,7 +52,7 @@ setup(
     author='Herilalaina Rakotoarison',
     author_email='herilalaina.rakotoarison@inria.fr',
     description='Monte-Carlo Tree Search for Algorithm Configuration.',
-    version="0.1-beta",
+    version=get_version("mosaic/__init__.py"),
     cmdclass={'build_ext': BuildExt},
     packages=find_packages(exclude=['examples']),
     setup_requires=setup_reqs,
