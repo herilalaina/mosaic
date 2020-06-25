@@ -37,17 +37,16 @@ class PUCT(BaseStrategy, BaseEarlyStopping):
 
         beta = (time.time() - self.policy_arg["start_time"]) / self.policy_arg["time_budget"]
 
-        self.logger.info("################################ Selection ##############################")
-        self.logger.info("vals", vals)
-        self.logger.info("visits", visits)
-        self.logger.info("probas", probas)
-        self.logger.info("c=", self.policy_arg["c"])
-        self.logger.info("beta=", beta)
+        # self.logger.info("## SELECTION ##")
+        # self.logger.info("vals", vals)
+        # self.logger.info("visits", visits)
+        # self.logger.info("probas", probas)
+        # self.logger.info("c=", self.policy_arg["c"])
+        # self.logger.info("beta=", beta)
         res = [val + self.policy_arg["c"] * (prob) * math.sqrt(sum(visits)) / (vis + 1)
                 for vis, val, prob, prob_gen in zip(visits, vals, probas, probas_general)]
-        self.logger.info("Final selection policy ", res)
-        self.logger.info("Selected ", np.argmax(res))
-        self.logger.info("#########################################################################")
+        # self.logger.info("Final selection policy ", res)
+        # self.logger.info("Selected ", np.argmax(res))
 
         return ids[np.argmax(res)]
 
