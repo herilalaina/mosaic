@@ -150,7 +150,7 @@ class MCTS:
         id = self.tree.add_node(name=name, value=value,
                                 terminal=terminal, parent_node=node)
         # self.logger.info("Expand\t id={0}\t name={1}\t value={2}\t terminal={3}".format(
-            id, name, value, terminal))
+            # id, name, value, terminal))
         return id
 
     def PLAYOUT(self, node_id):
