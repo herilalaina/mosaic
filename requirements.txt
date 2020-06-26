@@ -1,7 +1,7 @@
 ## For autosklearn
 nose
 numpy>=1.9.0
-scikit-learn>=0.21.0
+scikit-learn>=0.22.0,<0.23
 networkx==2.2
 ConfigSpace==0.4.12
 pynisher>=0.4.2
